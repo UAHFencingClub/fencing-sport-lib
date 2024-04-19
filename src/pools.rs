@@ -12,36 +12,15 @@ enum BoutCreationError {
 }
 
 trait BoutsCreator {
-    fn create_bouts(&mut self, pool_sheet: &mut PoolSheet) -> Result<(), BoutCreationError>;
+    fn get_order(&mut self, fencers: &Vec<Fencer>) -> Result<Vec<(usize, usize)>, PoolOrderError>;
 }
 
 struct SimpleBoutsCreator;
 
 impl BoutsCreator for SimpleBoutsCreator {
-    fn create_bouts(&mut self, pool_sheet: &mut PoolSheet) -> Result<(), BoutCreationError> {
-        let fencer_count = pool_sheet.fencers.len();
-        // let mut tmp_bouts = IndexMap::<FencerVs::<'a>,Bout::<'a>,RandomState>::new();
-        match pool_bout_orders::get_default_order(fencer_count) {
-            Ok(bout_indexes) => {
-                for pair in bout_indexes.into_iter() {
-                    match FencerVs::new(
-                        pool_sheet.fencers.get(pair.0-1).unwrap(),
-                        pool_sheet.fencers.get(pair.1-1).unwrap()
-                    ) {
-                        Ok(versus) => {
-                            pool_sheet.bouts.insert(versus,Bout::new(versus));
-                        },
-                        Err(err) => {
-                            return Err(BoutCreationError::VsError(err, "The pool creation paied a fencer with themselves.".to_string()))
-                        }
-                    }
-                }
-                Ok(())
-            }
-            Err(err) => {
-                Err(BoutCreationError::PoolOrderError(err))
-            }
-        }
+    fn get_order(&mut self, fencers: &Vec<Fencer>) -> Result<Vec<(usize, usize)>, PoolOrderError> {
+        let fencer_count = fencers.len();
+        pool_bout_orders::get_default_order(fencer_count)
     }
 }
 
@@ -49,7 +28,8 @@ impl BoutsCreator for SimpleBoutsCreator {
 // #[derive(Default)]
 struct PoolSheet<'a> {
     fencers: Vec<Fencer>,
-    bouts: IndexMap<FencerVs<'a>,Bout<'a>, RandomState>,
+    // bouts: IndexMap<FencerVs<'a>,Bout<'a>, RandomState>,
+    bouts: Vec<Bout<'a>>
 }
 
 impl<'a> PoolSheet<'a> {
@@ -69,6 +49,28 @@ impl<'a> PoolSheet<'a> {
     where
         C: BoutsCreator,
     {
-        creator.create_bouts(self);
+        // let mut tmp_bouts = IndexMap::<FencerVs::<>,Bout::<>,RandomState>::new();
+        match creator.get_order(&self.fencers) {
+            Ok(bout_indexes) => {
+                for pair in bout_indexes.into_iter() {
+                    match FencerVs::new(
+                        &self.fencers.get(pair.0-1).unwrap(),
+                        &self.fencers.get(pair.1-1).unwrap()
+                    ) {
+                        Ok(versus) => {
+                            // self.bouts.insert(versus,Bout::new(versus));
+                            self.bouts.push(Bout::new(versus))
+                        },
+                        Err(err) => {
+                            // return Err(BoutCreationError::VsError(err, "The pool creation paied a fencer with themselves.".to_string()))
+                        }
+                    }
+                }
+                // Ok(())
+            }
+            Err(err) => {
+                // Err(BoutCreationError::PoolOrderError(err))
+            }
+        }
     }
 }
