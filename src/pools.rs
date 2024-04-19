@@ -6,6 +6,7 @@ use crate::fencer::Fencer;
 use crate::bout::{Bout, FencerVs, FencerVsError};
 use crate::organizations::pool_bout_orders::{self, PoolOrderError};
 
+#[derive(Debug)]
 enum BoutCreationError {
     VsError(FencerVsError, String),
     PoolOrderError(PoolOrderError),
@@ -46,12 +47,11 @@ impl<'a, 'b> PoolSheet<'b> {
     }
 
     // function definition suggested by generative AI
-    fn create_bouts<C>(&'a mut self, creator: &C)
+    fn create_bouts<C>(&'a mut self, creator: &C) -> Result<&IndexMap<FencerVs<'b>, Bout<'b>, RandomState>, BoutCreationError>
     where
         C: BoutsCreator,
         'a: 'b,
     {
-        // let mut tmp_bouts = IndexMap::<FencerVs::<>,Bout::<>,RandomState>::new();
         match creator.get_order(&self.fencers) {
             Ok(bout_indexes) => {
                 for pair in bout_indexes.into_iter() {
@@ -60,17 +60,17 @@ impl<'a, 'b> PoolSheet<'b> {
                         self.fencers.get(pair.1-1).unwrap()
                     ) {
                         Ok(versus) => {
-                            self.bouts.insert(versus,Bout::new(versus));
+                            self.bouts.insert(versus, Bout::new(versus));
                         },
                         Err(err) => {
-                            // return Err(BoutCreationError::VsError(err, "The pool creation paied a fencer with themselves.".to_string()))
+                            return Err(BoutCreationError::VsError(err, "The pool creation paired a fencer with themselves.".to_string()))
                         }
                     }
                 }
-                // Ok(())
+                Ok(&self.bouts)
             }
             Err(err) => {
-                // Err(BoutCreationError::PoolOrderError(err))
+                Err(BoutCreationError::PoolOrderError(err))
             }
         }
     }
@@ -93,12 +93,14 @@ mod tests {
 
         let mut pool_sheet = PoolSheet::default();
         pool_sheet.add_fencers(fencers.into_iter());
-        pool_sheet.create_bouts(&SimpleBoutsCreator);
         
-        let test = &pool_sheet.bouts;
-        for bout in test.into_iter() {
-            let test = format!("{bout:?}");
-            println!("{test}")
+        let bouts_result = pool_sheet.create_bouts(&SimpleBoutsCreator);
+        if let Ok(bouts) = bouts_result {
+            for bout in bouts {
+                println!("{:?}", bout);
+            }
+        } else if let Err(err) = bouts_result {
+            println!("Error: {:?}", err);
         }
     }
 }

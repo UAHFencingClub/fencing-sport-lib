@@ -88,6 +88,7 @@ pub const POOL_OF_12_ORDER: [(usize, usize); 66] = [
     (12, 1), (2, 7), (8, 3), (4, 9), (10, 5), (6, 11)
 ];
 
+#[derive(Debug)]
 pub enum PoolOrderError {
     UnsupportedParticipantCount(String),
 }
