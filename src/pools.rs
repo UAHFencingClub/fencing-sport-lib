@@ -26,13 +26,13 @@ impl BoutsCreator for SimpleBoutsCreator {
 
 #[derive(Debug)]
 // #[derive(Default)]
-struct PoolSheet<'a> {
+struct PoolSheet<'b> {
     fencers: Vec<Fencer>,
-    // bouts: IndexMap<FencerVs<'a>,Bout<'a>, RandomState>,
-    bouts: Vec<Bout<'a>>
+    bouts: IndexMap<FencerVs<'b>,Bout<'b>, RandomState>,
+    // bouts: Vec<Bout<'a>>
 }
 
-impl<'a> PoolSheet<'a> {
+impl<'a, 'b> PoolSheet<'b> {
     fn add_fencer(&mut self, fencer: Fencer) {
         self.fencers.push(fencer);
     }
@@ -45,21 +45,22 @@ impl<'a> PoolSheet<'a> {
     }
 
     // function definition suggested by generative AI
-    fn create_bouts<C>(&mut self, creator: &mut C)
+    fn create_bouts<C>(&'a mut self, creator: &mut C)
     where
         C: BoutsCreator,
+        'a: 'b,
     {
         // let mut tmp_bouts = IndexMap::<FencerVs::<>,Bout::<>,RandomState>::new();
         match creator.get_order(&self.fencers) {
             Ok(bout_indexes) => {
                 for pair in bout_indexes.into_iter() {
-                    match FencerVs::new(
-                        &self.fencers.get(pair.0-1).unwrap(),
-                        &self.fencers.get(pair.1-1).unwrap()
+                    match FencerVs::<'b>::new(
+                        self.fencers.get(pair.0-1).unwrap(),
+                        self.fencers.get(pair.1-1).unwrap()
                     ) {
                         Ok(versus) => {
-                            // self.bouts.insert(versus,Bout::new(versus));
-                            self.bouts.push(Bout::new(versus))
+                            self.bouts.insert(versus,Bout::new(versus));
+                            // self.bouts.push(Bout::new(versus))
                         },
                         Err(err) => {
                             // return Err(BoutCreationError::VsError(err, "The pool creation paied a fencer with themselves.".to_string()))
