@@ -67,6 +67,22 @@ impl Ord for Fencer {
     }
 }
 
+impl Fencer {
+    pub fn with_name(name: String) -> Self {
+        Fencer {
+            name: Name {
+                first_name: name,
+                last_name: "".to_string(),
+                nick_name: None,
+            },
+            clubs: Vec::new(),
+            date_of_birth: None,
+            gender: None,
+            handedness: None,
+        }
+    }
+}
+
 #[derive(Debug)]
 #[derive(Hash)]
 #[derive(PartialEq, Eq)]

@@ -12,19 +12,20 @@ enum BoutCreationError {
 }
 
 trait BoutsCreator {
-    fn get_order(&mut self, fencers: &Vec<Fencer>) -> Result<Vec<(usize, usize)>, PoolOrderError>;
+    fn get_order(&self, fencers: &Vec<Fencer>) -> Result<Vec<(usize, usize)>, PoolOrderError>;
 }
 
 struct SimpleBoutsCreator;
 
 impl BoutsCreator for SimpleBoutsCreator {
-    fn get_order(&mut self, fencers: &Vec<Fencer>) -> Result<Vec<(usize, usize)>, PoolOrderError> {
+    fn get_order(&self, fencers: &Vec<Fencer>) -> Result<Vec<(usize, usize)>, PoolOrderError> {
         let fencer_count = fencers.len();
         pool_bout_orders::get_default_order(fencer_count)
     }
 }
 
 #[derive(Debug)]
+#[derive(Default)]
 // #[derive(Default)]
 struct PoolSheet<'b> {
     fencers: Vec<Fencer>,
@@ -45,7 +46,7 @@ impl<'a, 'b> PoolSheet<'b> {
     }
 
     // function definition suggested by generative AI
-    fn create_bouts<C>(&'a mut self, creator: &mut C)
+    fn create_bouts<C>(&'a mut self, creator: &C)
     where
         C: BoutsCreator,
         'a: 'b,
@@ -60,7 +61,6 @@ impl<'a, 'b> PoolSheet<'b> {
                     ) {
                         Ok(versus) => {
                             self.bouts.insert(versus,Bout::new(versus));
-                            // self.bouts.push(Bout::new(versus))
                         },
                         Err(err) => {
                             // return Err(BoutCreationError::VsError(err, "The pool creation paied a fencer with themselves.".to_string()))
@@ -72,6 +72,33 @@ impl<'a, 'b> PoolSheet<'b> {
             Err(err) => {
                 // Err(BoutCreationError::PoolOrderError(err))
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{bout, fencer::Fencer};
+
+    use super::{BoutsCreator, PoolSheet, SimpleBoutsCreator};
+
+    #[test]
+    fn initial_test() {
+        let fencers = [
+            Fencer::with_name("Fencer1".to_string()),
+            Fencer::with_name("Fencer2".to_string()),
+            Fencer::with_name("Fencer3".to_string()),
+            Fencer::with_name("Fencer4".to_string()),
+        ];
+
+        let mut pool_sheet = PoolSheet::default();
+        pool_sheet.add_fencers(fencers.into_iter());
+        pool_sheet.create_bouts(&SimpleBoutsCreator);
+        
+        let test = &pool_sheet.bouts;
+        for bout in test.into_iter() {
+            let test = format!("{bout:?}");
+            println!("{test}")
         }
     }
 }
