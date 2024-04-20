@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 use time::Date;
-use std::{cmp::Ordering, hash::{Hash, Hasher}};
+use core::fmt;
+use std::{cmp::Ordering, hash::{Hash, Hasher}, fmt::Display};
 
 #[derive(Debug)]
 #[derive(Hash)]
@@ -10,7 +11,22 @@ use std::{cmp::Ordering, hash::{Hash, Hasher}};
 struct Name {
     first_name: String,
     last_name: String,
-    nick_name: Option<String>,
+    middle_initial: Option<char>,
+    nickname: Option<String>,
+}
+
+impl Display for Name {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let middle_initial = match self.middle_initial {
+            Some(middle_initial) => middle_initial.to_string(),
+            None => "".to_string(),
+        };
+        let nickname = match &self.nickname {
+            Some(nickname) => format!("({nickname})"),
+            None => "".to_string(),
+        };
+        write!(f, "{}, {} {} {}", self.last_name, self.first_name, nickname, middle_initial)
+    }
 }
 
 #[derive(Debug)]
@@ -73,7 +89,8 @@ impl Fencer {
             name: Name {
                 first_name: name,
                 last_name: "".to_string(),
-                nick_name: None,
+                middle_initial: None,
+                nickname: None,
             },
             clubs: Vec::new(),
             date_of_birth: None,
