@@ -28,13 +28,12 @@ impl BoutsCreator for SimpleBoutsCreator {
 #[derive(Debug)]
 #[derive(Default)]
 // #[derive(Default)]
-struct PoolSheet<'b> {
+struct PoolSheet {
     fencers: Vec<Fencer>,
-    bouts: IndexMap<FencerVs<'b>,Bout<'b>, RandomState>,
-    // bouts: Vec<Bout<'a>>
+    bouts: IndexMap<FencerVs, Bout, RandomState>,
 }
 
-impl<'a, 'b> PoolSheet<'b> {
+impl PoolSheet {
     fn add_fencer(&mut self, fencer: Fencer) {
         self.fencers.push(fencer);
     }
@@ -47,27 +46,27 @@ impl<'a, 'b> PoolSheet<'b> {
     }
 
     // function definition suggested by generative AI
-    fn create_bouts<C>(&'a mut self, creator: &C) -> Result<&IndexMap<FencerVs<'b>, Bout<'b>, RandomState>, BoutCreationError>
+    fn create_bouts<C>(&mut self, creator: &C) -> Result<(), BoutCreationError>
     where
         C: BoutsCreator,
-        'a: 'b,
     {
-        match creator.get_order(&self.fencers) {
+        let test = &self.fencers;
+        match creator.get_order(test) {
             Ok(bout_indexes) => {
                 for pair in bout_indexes.into_iter() {
-                    match FencerVs::<'b>::new(
-                        self.fencers.get(pair.0-1).unwrap(),
-                        self.fencers.get(pair.1-1).unwrap()
+                    match FencerVs::new(
+                        Box::new(self.fencers.get(pair.0-1).unwrap().clone()),
+                        Box::new(self.fencers.get(pair.1-1).unwrap().clone())
                     ) {
                         Ok(versus) => {
-                            self.bouts.insert(versus, Bout::new(versus));
+                            self.bouts.insert(versus.clone(), Bout::new(versus));
                         },
                         Err(err) => {
                             return Err(BoutCreationError::VsError(err, "The pool creation paired a fencer with themselves.".to_string()))
                         }
                     }
                 }
-                Ok(&self.bouts)
+                Ok(())
             }
             Err(err) => {
                 Err(BoutCreationError::PoolOrderError(err))
@@ -78,12 +77,11 @@ impl<'a, 'b> PoolSheet<'b> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bout, fencer::Fencer};
-
+    use crate::{bout::{self, FencerVs}, fencer::Fencer};
     use super::{BoutsCreator, PoolSheet, SimpleBoutsCreator};
 
     #[test]
-    fn initial_test() {
+    fn iter_test() {
         let fencers = [
             Fencer::with_name("Fencer1".to_string()),
             Fencer::with_name("Fencer2".to_string()),
@@ -93,14 +91,30 @@ mod tests {
 
         let mut pool_sheet = PoolSheet::default();
         pool_sheet.add_fencers(fencers.into_iter());
-        
-        let bouts_result = pool_sheet.create_bouts(&SimpleBoutsCreator);
-        if let Ok(bouts) = bouts_result {
-            for bout in bouts {
-                println!("{:?}", bout);
-            }
-        } else if let Err(err) = bouts_result {
-            println!("Error: {:?}", err);
+        let _ = pool_sheet.create_bouts(&SimpleBoutsCreator);
+        for bout in pool_sheet.bouts {
+            println!("{bout:#?}");
         }
+    }
+
+    #[test]
+    fn bout_addressing() {
+        let fencers = [
+            Fencer::with_name("Fencer1".to_string()),
+            Fencer::with_name("Fencer2".to_string()),
+            Fencer::with_name("Fencer3".to_string()),
+            Fencer::with_name("Fencer4".to_string()),
+        ];
+
+        let mut pool_sheet = PoolSheet::default();
+        pool_sheet.add_fencers(fencers.clone().into_iter());
+        let _ = pool_sheet.create_bouts(&SimpleBoutsCreator);
+
+        let a_versus = FencerVs::new(Box::new(fencers[0].clone()), Box::new(fencers[1].clone())).unwrap();
+
+        let a_bout = pool_sheet.bouts.get_mut(&a_versus).unwrap();
+        a_bout.update_score(0,5);
+        println!("\nSingle Bout: {a_bout:#?}");
+
     }
 }
