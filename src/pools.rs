@@ -28,17 +28,17 @@ impl BoutsCreator for SimpleBoutsCreator {
 #[derive(Debug)]
 #[derive(Default)]
 // #[derive(Default)]
-struct PoolSheet {
+pub struct PoolSheet {
     fencers: Vec<Fencer>,
     bouts: IndexMap<FencerVs, Bout, RandomState>,
 }
 
 impl PoolSheet {
-    fn add_fencer(&mut self, fencer: Fencer) {
+    pub fn add_fencer(&mut self, fencer: Fencer) {
         self.fencers.push(fencer);
     }
 
-    fn add_fencers<I>(&mut self, fencers: I)
+    pub fn add_fencers<I>(&mut self, fencers: I)
     where
         I: Iterator<Item = Fencer>,
     {
@@ -46,7 +46,7 @@ impl PoolSheet {
     }
 
     // function definition suggested by generative AI
-    fn create_bouts<C>(&mut self, creator: &C) -> Result<(), BoutCreationError>
+    pub fn create_bouts<C>(&mut self, creator: &C) -> Result<(), BoutCreationError>
     where
         C: BoutsCreator,
     {
