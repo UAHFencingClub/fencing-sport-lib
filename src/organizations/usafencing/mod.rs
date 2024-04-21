@@ -1,8 +1,13 @@
+pub mod pool_bout_orders;
+pub mod fencer;
+pub mod club;
+use serde::{Serialize, Deserialize};
 use email_address::EmailAddress;
 use phonenumber::PhoneNumber;
 
 /// I don't actually have a good reference other than this: https://cdn1.sportngin.com/attachments/document/0132/5185/USA_Fencing_Classification_Reference_Chart.pdf
 /// Accessed April 17, 2024
+#[derive(Debug)]
 enum Rating {
     A(usize),
     B(usize),
@@ -12,6 +17,9 @@ enum Rating {
     NoRating,
 }
 
+#[derive(Debug)]
+#[derive(Serialize, Deserialize)]
+#[derive(Clone)]
 struct ContactInfo {
     email: Option<EmailAddress>,
     phone_number: Option<PhoneNumber>,
@@ -19,6 +27,9 @@ struct ContactInfo {
 
 /// USA Fencing regions pulled from https://www.usafencing.org/regional-info
 /// Accessed April 17, 2024
+#[derive(Debug)]
+#[derive(Serialize, Deserialize)]
+#[derive(Clone)]
 enum ClubRegion {
     Region1,
     Region2,
@@ -32,6 +43,8 @@ enum ClubRegion {
 /// Access April 17, 2024
 // Written by passing the USA Fencing division list into chatgpt
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
+#[derive(Clone)]
 enum Division {
     Alabama,
     Alaska,
@@ -103,8 +116,10 @@ enum Division {
     Unclaimed,
 }
 
-// Written by generative AI
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
+#[derive(Clone)]
+// Written by generative AI
 enum USState {
     AL, // Alabama
     AK, // Alaska
@@ -157,21 +172,4 @@ enum USState {
     WI, // Wisconsin
     WY, // Wyoming
     OtherTerritory,
-}
-
-#[derive(Debug)]
-struct Club {
-    name: String,
-    shortname: String,
-    id: usize,
-    //not sure what this date is for
-    date: time::Date,
-    // Maybe some binding to libpostal,
-    // maybe some other bining
-    //String for now.
-    address: String,
-    state: USState,
-    point_of_contact: ContactInfo,
-    region: Region,
-    division: Division,
 }
