@@ -7,33 +7,31 @@ use crate::fencer::Fencer;
 use crate::organizations::usafencing::pool_bout_orders::{get_default_order, PoolOrderError};
 
 #[derive(Debug)]
-enum BoutCreationError {
+pub enum BoutCreationError {
     VsError(FencerVsError, String),
     PoolOrderError(PoolOrderError),
 }
 
-trait BoutsCreator<T: Fencer> {
-    fn get_order(&self, fencers: &Vec<T>) -> Result<Vec<(usize, usize)>, PoolOrderError>;
+pub trait BoutsCreator<T: Fencer> {
+    fn get_order(&self, fencers: &[T]) -> Result<Vec<(usize, usize)>, PoolOrderError>;
 }
 
 struct SimpleBoutsCreator;
 
 impl<T: Fencer> BoutsCreator<T> for SimpleBoutsCreator {
-    fn get_order(&self, fencers: &Vec<T>) -> Result<Vec<(usize, usize)>, PoolOrderError> {
+    fn get_order(&self, fencers: &[T]) -> Result<Vec<(usize, usize)>, PoolOrderError> {
         let fencer_count = fencers.len();
         get_default_order(fencer_count)
     }
 }
 
 #[derive(Debug)]
-#[derive(Default)]
-// #[derive(Default)]
-pub struct PoolSheet<T: Fencer> {
+pub struct PoolSheet<'a, T: Fencer> {
     fencers: Vec<T>,
-    bouts: IndexMap<FencerVs, Bout, RandomState>,
+    bouts: IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>,
 }
 
-impl<T: Fencer> PoolSheet<T> where for<'a> &'a T: Fencer {
+impl<'a, 'b, T: Fencer> PoolSheet<'a, T> {
     pub fn add_fencer(&mut self, fencer: T) {
         self.fencers.push(fencer);
     }
@@ -45,18 +43,18 @@ impl<T: Fencer> PoolSheet<T> where for<'a> &'a T: Fencer {
         self.fencers.extend(fencers);
     }
 
-    // function definition suggested by generative AI
-    pub fn create_bouts<C>(&mut self, creator: &C) -> Result<(), BoutCreationError>
+    pub fn create_bouts<C>(&'b mut self, creator: &C) -> Result<(), BoutCreationError>
     where
         C: BoutsCreator<T>,
+        'b: 'a
     {
         let test = &self.fencers;
         match creator.get_order(test) {
             Ok(bout_indexes) => {
                 for pair in bout_indexes.into_iter() {
                     match FencerVs::new(
-                        Box::new(self.fencers.get(pair.0-1).unwrap().clone()),
-                        Box::new(self.fencers.get(pair.1-1).unwrap().clone())
+                        self.fencers.get(pair.0-1).unwrap(),
+                        self.fencers.get(pair.1-1).unwrap()
                     ) {
                         Ok(versus) => {
                             self.bouts.insert(versus.clone(), Bout::new(versus));
@@ -71,6 +69,15 @@ impl<T: Fencer> PoolSheet<T> where for<'a> &'a T: Fencer {
             Err(err) => {
                 Err(BoutCreationError::PoolOrderError(err))
             }
+        }
+    }
+}
+
+impl<'a, T: Fencer> Default for PoolSheet<'a, T> {
+    fn default() -> Self {
+        PoolSheet {
+            fencers: Vec::new(),
+            bouts: IndexMap::new(),
         }
     }
 }
@@ -110,7 +117,7 @@ mod tests {
         pool_sheet.add_fencers(fencers.clone().into_iter());
         let _ = pool_sheet.create_bouts(&SimpleBoutsCreator);
 
-        let a_versus = FencerVs::new(Box::new(fencers[0].clone()), Box::new(fencers[1].clone())).unwrap();
+        let a_versus = FencerVs::new(&fencers[0], &fencers[1]).unwrap();
 
         let a_bout = pool_sheet.bouts.get_mut(&a_versus).unwrap();
         a_bout.update_score(0,5);

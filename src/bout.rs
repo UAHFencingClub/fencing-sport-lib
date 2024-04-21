@@ -3,17 +3,17 @@ use std::{fmt, hash::{self, Hash}};
 use crate::fencer::Fencer;
 
 #[derive(Debug)]
-pub struct Bout{
-    fencers: FencerVs,
+pub struct Bout<'a, T: Fencer>{
+    fencers: FencerVs<'a, T>,
     scores: Option<(u8, u8)>,
 }
 
-impl Bout {
+impl<'a, T: Fencer> Bout<'a, T> {
     pub fn update_score(&mut self, score_a: u8, score_b: u8) {
         self.scores = Some((score_a, score_b));
     } 
 
-    pub fn new(fencers: FencerVs) -> Self {
+    pub fn new(fencers: FencerVs<'a, T>) -> Self {
         Bout {
             fencers,
             scores: None,
@@ -40,10 +40,10 @@ impl fmt::Display for FencerVsError {
 #[derive(Debug)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 #[derive(Clone)]
-pub struct FencerVs(Box<Fencer>, Box<Fencer>);
+pub struct FencerVs<'a, T: Fencer>(&'a T, &'a T);
 
-impl FencerVs{
-    pub fn new(fencer_a: Box<Fencer>, fencer_b: Box<Fencer>) -> Result<Self, FencerVsError>{
+impl<'a, T: Fencer> FencerVs<'a, T>{
+    pub fn new(fencer_a: &'a T, fencer_b: &'a T) -> Result<Self, FencerVsError>{
         if fencer_a == fencer_b {
             return Err(FencerVsError::SameFencer);
         }
@@ -51,7 +51,7 @@ impl FencerVs{
     }
 }
 
-impl Hash for FencerVs {
+impl<'a, T: Fencer> Hash for FencerVs<'a, T> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         match self {
             FencerVs(a, b) if a > b => {

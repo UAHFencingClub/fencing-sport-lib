@@ -1,14 +1,13 @@
 use serde::{Serialize, Deserialize};
 use std::{cmp::Ordering, hash::Hash};
 
-pub trait Fencer {
+pub trait Fencer: Hash + Serialize + Eq + PartialEq + PartialOrd + Ord + Clone{
     fn dummy1(&self);
 }
 
 #[derive(Debug)]
 #[derive(Serialize, Deserialize)]
 #[derive(Clone)]
-#[derive(Hash)]
 pub struct SimpleFencer {
     name: String,
     clubs: Vec<Club>
@@ -30,6 +29,12 @@ impl SimpleFencer{
             name: name.to_string(),
             clubs: Vec::new()
         }
+    }
+}
+
+impl Hash for SimpleFencer {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state)
     }
 }
 
