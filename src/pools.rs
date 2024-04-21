@@ -2,9 +2,9 @@ use std::collections::hash_map::RandomState;
 
 use indexmap::IndexMap;
 
-use crate::fencer::Fencer;
 use crate::bout::{Bout, FencerVs, FencerVsError};
-use crate::organizations::pool_bout_orders::{self, PoolOrderError};
+use crate::fencer::Fencer;
+use crate::organizations::usafencing::pool_bout_orders::{get_default_order, PoolOrderError};
 
 #[derive(Debug)]
 enum BoutCreationError {
@@ -12,35 +12,35 @@ enum BoutCreationError {
     PoolOrderError(PoolOrderError),
 }
 
-trait BoutsCreator {
-    fn get_order(&self, fencers: &Vec<Fencer>) -> Result<Vec<(usize, usize)>, PoolOrderError>;
+trait BoutsCreator<T: Fencer> {
+    fn get_order(&self, fencers: &Vec<T>) -> Result<Vec<(usize, usize)>, PoolOrderError>;
 }
 
 struct SimpleBoutsCreator;
 
-impl BoutsCreator for SimpleBoutsCreator {
-    fn get_order(&self, fencers: &Vec<Fencer>) -> Result<Vec<(usize, usize)>, PoolOrderError> {
+impl<T: Fencer> BoutsCreator<T> for SimpleBoutsCreator {
+    fn get_order(&self, fencers: &Vec<T>) -> Result<Vec<(usize, usize)>, PoolOrderError> {
         let fencer_count = fencers.len();
-        pool_bout_orders::get_default_order(fencer_count)
+        get_default_order(fencer_count)
     }
 }
 
 #[derive(Debug)]
 #[derive(Default)]
 // #[derive(Default)]
-pub struct PoolSheet {
-    fencers: Vec<Fencer>,
+pub struct PoolSheet<T: Fencer> {
+    fencers: Vec<T>,
     bouts: IndexMap<FencerVs, Bout, RandomState>,
 }
 
-impl PoolSheet {
-    pub fn add_fencer(&mut self, fencer: Fencer) {
+impl<T: Fencer> PoolSheet<T> where for<'a> &'a T: Fencer {
+    pub fn add_fencer(&mut self, fencer: T) {
         self.fencers.push(fencer);
     }
 
     pub fn add_fencers<I>(&mut self, fencers: I)
     where
-        I: Iterator<Item = Fencer>,
+        I: Iterator<Item = T>,
     {
         self.fencers.extend(fencers);
     }
@@ -48,7 +48,7 @@ impl PoolSheet {
     // function definition suggested by generative AI
     pub fn create_bouts<C>(&mut self, creator: &C) -> Result<(), BoutCreationError>
     where
-        C: BoutsCreator,
+        C: BoutsCreator<T>,
     {
         let test = &self.fencers;
         match creator.get_order(test) {
@@ -77,16 +77,16 @@ impl PoolSheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bout::{self, FencerVs}, fencer::Fencer};
+    use crate::{bout::{self, FencerVs}, fencer::SimpleFencer};
     use super::{BoutsCreator, PoolSheet, SimpleBoutsCreator};
 
     #[test]
     fn iter_test() {
         let fencers = [
-            Fencer::with_name("Fencer1".to_string()),
-            Fencer::with_name("Fencer2".to_string()),
-            Fencer::with_name("Fencer3".to_string()),
-            Fencer::with_name("Fencer4".to_string()),
+            SimpleFencer::new("Fencer1"),
+            SimpleFencer::new("Fencer2"),
+            SimpleFencer::new("Fencer3"),
+            SimpleFencer::new("Fencer4"),
         ];
 
         let mut pool_sheet = PoolSheet::default();
@@ -100,10 +100,10 @@ mod tests {
     #[test]
     fn bout_addressing() {
         let fencers = [
-            Fencer::with_name("Fencer1".to_string()),
-            Fencer::with_name("Fencer2".to_string()),
-            Fencer::with_name("Fencer3".to_string()),
-            Fencer::with_name("Fencer4".to_string()),
+            SimpleFencer::new("Fencer1"),
+            SimpleFencer::new("Fencer2"),
+            SimpleFencer::new("Fencer3"),
+            SimpleFencer::new("Fencer4"),
         ];
 
         let mut pool_sheet = PoolSheet::default();

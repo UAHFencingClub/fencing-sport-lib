@@ -1,102 +1,54 @@
 use serde::{Serialize, Deserialize};
-use time::Date;
-use core::fmt;
-use std::{cmp::Ordering, hash::{Hash, Hasher}, fmt::Display};
+use std::{cmp::Ordering, hash::Hash};
+
+pub trait Fencer {
+    fn dummy1(&self);
+}
 
 #[derive(Debug)]
+#[derive(Serialize, Deserialize)]
+#[derive(Clone)]
 #[derive(Hash)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
-struct Name {
-    first_name: String,
-    last_name: String,
-    middle_initial: Option<char>,
-    nickname: Option<String>,
+pub struct SimpleFencer {
+    name: String,
+    clubs: Vec<Club>
 }
 
-impl Display for Name {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let middle_initial = match self.middle_initial {
-            Some(middle_initial) => middle_initial.to_string(),
-            None => "".to_string(),
-        };
-        let nickname = match &self.nickname {
-            Some(nickname) => format!("({nickname})"),
-            None => "".to_string(),
-        };
-        write!(f, "{}, {} {} {}", self.last_name, self.first_name, nickname, middle_initial)
+impl Fencer for &SimpleFencer {
+    fn dummy1(&self) {
+        
     }
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
-enum Gender {
-    Male,
-    Female,
-    Other,
+impl Fencer for SimpleFencer {
+    fn dummy1(&self) {}
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
-enum Hand {
-    Left,
-    Right,
-}
-
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
-pub struct Fencer {
-    name: Name,
-    clubs: Vec<Club>,
-    date_of_birth: Option<Date>,
-    gender: Option<Gender>,
-    handedness: Option<Hand>,
-}
-
-impl Hash for Fencer {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.name.hash(state);
-        self.date_of_birth.hash(state);
+impl SimpleFencer{
+    pub fn new(name: impl ToString) -> Self {
+        SimpleFencer {
+            name: name.to_string(),
+            clubs: Vec::new()
+        }
     }
 }
 
-impl PartialEq for Fencer {
+impl PartialEq for SimpleFencer {
     fn eq(&self, other: &Self) -> bool {
-        (self.name == other.name) & (self.date_of_birth == other.date_of_birth)
+        self.name == other.name
     }
 }
-impl Eq for Fencer {}
+impl Eq for SimpleFencer {}
 
-impl PartialOrd for Fencer {
+impl PartialOrd for SimpleFencer {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Fencer {
+impl Ord for SimpleFencer {
     fn cmp(&self, other: &Self) -> Ordering {
         self.name.cmp(&other.name)
-    }
-}
-
-impl Fencer {
-    pub fn with_name(name: String) -> Self {
-        Fencer {
-            name: Name {
-                first_name: name,
-                last_name: "".to_string(),
-                middle_initial: None,
-                nickname: None,
-            },
-            clubs: Vec::new(),
-            date_of_birth: None,
-            gender: None,
-            handedness: None,
-        }
     }
 }
 

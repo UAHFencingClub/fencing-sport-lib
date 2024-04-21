@@ -3,6 +3,7 @@ use time::Date;
 use core::fmt;
 use std::{cmp::Ordering, hash::{Hash, Hasher}, fmt::Display};
 use crate::organizations::usafencing::club::Club;
+use crate::fencer::Fencer;
 
 #[derive(Debug)]
 #[derive(Hash)]
@@ -69,6 +70,30 @@ pub struct USAFFencer {
     date_of_birth: Option<Date>,
     gender_identity: Option<GenderIdentity>,
     handedness: Option<Hand>,
+}
+
+impl Fencer for &USAFFencer {
+    fn dummy1(&self) {
+        
+    }
+}
+
+impl Fencer for USAFFencer {
+    fn dummy1(&self) {
+        
+    }
+}
+// Temporary
+impl USAFFencer {
+    fn new(name: String) -> Self {
+        USAFFencer {
+            name: Name { suffix: None, first_name: name, last_name: String::from(""), middle_initial: None, nickname: None },
+            clubs: Vec::new(),
+            date_of_birth: None,
+            gender_identity: None,
+            handedness: None,
+        }
+    }
 }
 
 impl Hash for USAFFencer {
