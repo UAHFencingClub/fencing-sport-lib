@@ -85,10 +85,8 @@ impl<'a, T: Fencer> Default for PoolSheet<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Borrow;
-
-    use crate::{bout::{self, FencerVs}, fencer::SimpleFencer};
-    use super::{BoutsCreator, PoolSheet, SimpleBoutsCreator};
+    use crate::{bout::FencerVs, fencer::SimpleFencer};
+    use super::{PoolSheet, SimpleBoutsCreator};
 
     #[test]
     fn iter_test() {
@@ -126,6 +124,5 @@ mod tests {
         let a_bout = bouts.get_mut(&a_versus).unwrap();
         a_bout.update_score(0,5);
         println!("\nSingle Bout: {a_bout:#?}");
-
     }
 }
