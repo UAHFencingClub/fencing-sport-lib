@@ -3,7 +3,7 @@ use std::collections::hash_map::RandomState;
 use indexmap::IndexMap;
 
 use crate::bout::{Bout, FencerVs, FencerVsError};
-use crate::fencer::Fencer;
+use crate::fencer::{self, Fencer};
 use crate::organizations::usafencing::pool_bout_orders::{get_default_order, PoolOrderError};
 
 #[derive(Debug)]
@@ -26,24 +26,47 @@ impl<T: Fencer> BoutsCreator<T> for SimpleBoutsCreator {
     }
 }
 
+struct FencerScore<T> {
+    fencer: T,
+    score: usize,
+}
+pub struct FencersScores<T: Fencer>(FencerScore<T>, FencerScore<T>);
+
 #[derive(Debug)]
-struct PoolSheet<'a, T: Fencer> {
+pub struct PoolSheet<T: Fencer> {
     fencers: Vec<T>,
-    bouts: IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>,
+    bouts: IndexMap<FencerVs<T>, Bout<T>, RandomState>,
 }
 
-impl<'a, 'b, T: Fencer> PoolSheet<'a, T> {
-    pub fn builder() -> PoolSheetBuilder<'a, T> {
+impl<T: Fencer> PoolSheet<T> {
+    pub fn builder() -> PoolSheetBuilder<T> {
         PoolSheetBuilder::default()
+    }
+
+    pub fn update_scores(&mut self, score: FencersScores<T>) -> Result<(),PoolSheetError> {
+        let fencer_vs = match FencerVs::new(score.0.fencer, score.1.fencer){
+            Ok(versus) => versus,
+            Err(err) => {
+                return Err(PoolSheetError::VsError(err, "ToDo".to_string()));
+            }
+        };
+        let bout = match self.bouts.get_mut(&fencer_vs) {
+            Some(bout) => bout,
+            None => {
+                return Err(PoolSheetError::NoBouts);
+            }
+        };
+        bout
+        Ok(())
     }
 }
 
-pub struct PoolSheetBuilder<'a, T: Fencer> {
+pub struct PoolSheetBuilder<T: Fencer> {
     fencers: Vec<T>,
-    bouts: Result<IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>, PoolSheetError>,
+    bouts: Result<IndexMap<FencerVs<T>, Bout<T>, RandomState>, PoolSheetError>,
 }
 
-impl<'a, T: Fencer> Default for PoolSheetBuilder<'a, T> {
+impl<T: Fencer> Default for PoolSheetBuilder<T> {
     fn default() -> Self {
         PoolSheetBuilder {
             fencers: Vec::new(),
@@ -52,7 +75,7 @@ impl<'a, T: Fencer> Default for PoolSheetBuilder<'a, T> {
     }
 }
 
-impl <'a, T: Fencer> PoolSheetBuilder<'a, T> {
+impl <T: Fencer> PoolSheetBuilder<T> {
     fn add_fencer(mut self, fencer: T) -> Self {
         self.fencers.push(fencer);
         self
@@ -76,9 +99,9 @@ impl <'a, T: Fencer> PoolSheetBuilder<'a, T> {
                 let mut bouts = IndexMap::new();
                 let mut status = Err(PoolSheetError::NoBouts);
                 for pair in bout_indexes.into_iter() {
-                    status = match FencerVs::<'a>::new(
-                        self.fencers.get(pair.0-1).unwrap(),
-                        self.fencers.get(pair.1-1).unwrap()
+                    status = match FencerVs::new(
+                        self.fencers.get(pair.0-1).unwrap().clone(),
+                        self.fencers.get(pair.1-1).unwrap().clone()
                     ) {
                         Ok(versus) => {
                             bouts.insert(versus.clone(), Bout::new(versus));
@@ -102,7 +125,7 @@ impl <'a, T: Fencer> PoolSheetBuilder<'a, T> {
         self
     }
     
-    pub fn build(self) -> Result<PoolSheet<'a, T>, PoolSheetError>{
+    pub fn build(self) -> Result<PoolSheet<T>, PoolSheetError>{
         match self.bouts {
             Ok(bouts) => Ok(PoolSheet {
                 fencers: self.fencers,
