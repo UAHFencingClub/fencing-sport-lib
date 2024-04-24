@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::hash_map::RandomState;
 
 use indexmap::IndexMap;
@@ -28,7 +29,7 @@ impl<T: Fencer> BoutsCreator<T> for SimpleBoutsCreator {
 #[derive(Debug)]
 pub struct PoolSheet<'a, T: Fencer> {
     fencers: Vec<T>,
-    bouts: IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>,
+    bouts: RefCell<IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>>,
 }
 
 impl<'a, 'b, T: Fencer> PoolSheet<'a, T> {
@@ -43,21 +44,21 @@ impl<'a, 'b, T: Fencer> PoolSheet<'a, T> {
         self.fencers.extend(fencers);
     }
 
-    pub fn create_bouts<C>(&'b mut self, creator: &C) -> Result<(), BoutCreationError>
+    pub fn create_bouts<C>(&'b self, creator: &C) -> Result<(), BoutCreationError>
     where
         C: BoutsCreator<T>,
         'b: 'a
     {
-        let test = &self.fencers;
-        match creator.get_order(test) {
+        match creator.get_order(&self.fencers) {
             Ok(bout_indexes) => {
+                let mut bouts_map = self.bouts.borrow_mut();
                 for pair in bout_indexes.into_iter() {
                     match FencerVs::new(
                         self.fencers.get(pair.0-1).unwrap(),
                         self.fencers.get(pair.1-1).unwrap()
                     ) {
                         Ok(versus) => {
-                            self.bouts.insert(versus.clone(), Bout::new(versus));
+                            bouts_map.insert(versus.clone(), Bout::new(versus));
                         },
                         Err(err) => {
                             return Err(BoutCreationError::VsError(err, "The pool creation paired a fencer with themselves.".to_string()))
@@ -77,13 +78,15 @@ impl<'a, T: Fencer> Default for PoolSheet<'a, T> {
     fn default() -> Self {
         PoolSheet {
             fencers: Vec::new(),
-            bouts: IndexMap::new(),
+            bouts: RefCell::new(IndexMap::new()),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Borrow;
+
     use crate::{bout::{self, FencerVs}, fencer::SimpleFencer};
     use super::{BoutsCreator, PoolSheet, SimpleBoutsCreator};
 
@@ -99,7 +102,7 @@ mod tests {
         let mut pool_sheet = PoolSheet::default();
         pool_sheet.add_fencers(fencers.into_iter());
         let _ = pool_sheet.create_bouts(&SimpleBoutsCreator);
-        for bout in pool_sheet.bouts {
+        for bout in pool_sheet.bouts.borrow().iter() {
             println!("{bout:#?}");
         }
     }
@@ -119,7 +122,8 @@ mod tests {
 
         let a_versus = FencerVs::new(&fencers[0], &fencers[1]).unwrap();
 
-        let a_bout = pool_sheet.bouts.get_mut(&a_versus).unwrap();
+        let mut bouts = pool_sheet.bouts.borrow_mut();
+        let a_bout = bouts.get_mut(&a_versus).unwrap();
         a_bout.update_score(0,5);
         println!("\nSingle Bout: {a_bout:#?}");
 
