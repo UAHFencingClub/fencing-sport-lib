@@ -17,7 +17,7 @@ pub trait BoutsCreator<T: Fencer> {
     fn get_order(&self, fencers: &[T]) -> Result<Vec<(usize, usize)>, PoolOrderError>;
 }
 
-struct SimpleBoutsCreator;
+pub struct SimpleBoutsCreator;
 
 impl<T: Fencer> BoutsCreator<T> for SimpleBoutsCreator {
     fn get_order(&self, fencers: &[T]) -> Result<Vec<(usize, usize)>, PoolOrderError> {
@@ -42,6 +42,10 @@ impl<'a, 'b, T: Fencer> PoolSheet<'a, T> {
         I: Iterator<Item = T>,
     {
         self.fencers.extend(fencers);
+    }
+
+    pub fn get_fencers(&self) -> &Vec<T>{
+        &self.fencers
     }
 
     pub fn create_bouts<C>(&'b self, creator: &C) -> Result<(), BoutCreationError>
