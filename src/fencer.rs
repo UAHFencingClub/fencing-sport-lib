@@ -60,3 +60,18 @@ struct Club {
     full_name: String,
     shortname: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::SimpleFencer;
+    use serde_json;
+
+    #[test]
+    fn serialize_test() {
+        let fencer = SimpleFencer::new("Fencer1");
+        let serialized_fencer = serde_json::to_string(&fencer).unwrap();
+        println!("Serialized Fencer: {}", serialized_fencer.clone());
+        let deser_fencer = serde_json::from_str::<SimpleFencer>(&serialized_fencer).unwrap();
+        println!("Serialized Fencer: {:?}", deser_fencer);
+    }
+}

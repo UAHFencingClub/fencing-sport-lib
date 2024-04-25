@@ -114,20 +114,23 @@ mod tests {
             SimpleFencer::new("Fencer4"),
         ];
 
+        let json_fencer1 = serde_json::from_str::<SimpleFencer>(r#"{"name":"Fencer1","clubs":[]}"#).unwrap();
+        let json_fencer2 = serde_json::from_str::<SimpleFencer>(r#"{"name":"Fencer2","clubs":[]}"#).unwrap();
+
         let mut pool_sheet = PoolSheet::default();
         pool_sheet.add_fencers(fencers.clone().into_iter());
         let _ = pool_sheet.create_bouts(&SimpleBoutsCreator);
 
-        let a_versus = FencerVs::new(&fencers[0], &fencers[1]).unwrap();
+        let a_versus = FencerVs::new(&json_fencer1, &json_fencer2).unwrap();
 
         let mut bouts = pool_sheet.bouts.borrow_mut();
         let a_bout = bouts.get_mut(&a_versus).unwrap();
         a_bout.update_score(FencerScore {
-            fencer: &fencers[0],
+            fencer: &json_fencer1,
             score: 0,
             cards: Cards::default(),
         },FencerScore {
-            fencer: &fencers[1],
+            fencer: &json_fencer2,
             score: 0,
             cards: Cards::default(),
         });
