@@ -72,15 +72,9 @@ pub struct USAFFencer {
     handedness: Option<Hand>,
 }
 
-impl Fencer for &USAFFencer {
-    fn dummy1(&self) {
-        
-    }
-}
-
 impl Fencer for USAFFencer {
-    fn dummy1(&self) {
-        
+    fn get_fullname(&self) -> String {
+        self.name.to_string()
     }
 }
 // Temporary

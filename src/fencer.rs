@@ -2,7 +2,7 @@ use serde::{Serialize, Deserialize};
 use std::{cmp::Ordering, hash::Hash};
 
 pub trait Fencer: Hash + Serialize + Eq + PartialEq + PartialOrd + Ord + Clone{
-    fn dummy1(&self);
+    fn get_fullname(&self) -> String;
 }
 
 #[derive(Debug)]
@@ -14,7 +14,9 @@ pub struct SimpleFencer {
 }
 
 impl Fencer for SimpleFencer {
-    fn dummy1(&self) {}
+    fn get_fullname(&self) -> String {
+        self.name.clone()
+    }
 }
 
 impl SimpleFencer{
