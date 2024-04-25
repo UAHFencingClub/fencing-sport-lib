@@ -85,7 +85,7 @@ impl<'a, T: Fencer> Default for PoolSheet<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{bout::FencerVs, fencer::SimpleFencer};
+    use crate::{bout::{FencerScore, FencerVs}, cards::Cards, fencer::SimpleFencer};
     use super::{PoolSheet, SimpleBoutsCreator};
 
     #[test]
@@ -122,7 +122,15 @@ mod tests {
 
         let mut bouts = pool_sheet.bouts.borrow_mut();
         let a_bout = bouts.get_mut(&a_versus).unwrap();
-        a_bout.update_score(0,5);
+        a_bout.update_score(FencerScore {
+            fencer: &fencers[0],
+            score: 0,
+            cards: Cards::default(),
+        },FencerScore {
+            fencer: &fencers[1],
+            score: 0,
+            cards: Cards::default(),
+        });
         println!("\nSingle Bout: {a_bout:#?}");
     }
 }

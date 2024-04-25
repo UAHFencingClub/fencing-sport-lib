@@ -1,15 +1,23 @@
 use std::{fmt, hash::{self, Hash}};
 
 use crate::fencer::Fencer;
+use crate::cards::Cards;
+
+#[derive(Debug)]
+pub struct FencerScore<'a, T: Fencer> {
+    pub fencer: &'a T,
+    pub score: u8,
+    pub cards: Cards, 
+}
 
 #[derive(Debug)]
 pub struct Bout<'a, T: Fencer>{
     fencers: FencerVs<'a, T>,
-    scores: Option<(u8, u8)>,
+    scores: Option<(FencerScore<'a, T>, FencerScore<'a, T>)>,
 }
 
 impl<'a, T: Fencer> Bout<'a, T> {
-    pub fn update_score(&mut self, score_a: u8, score_b: u8) {
+    pub fn update_score(&mut self, score_a: FencerScore<'a, T>, score_b: FencerScore<'a, T>) {
         self.scores = Some((score_a, score_b));
     } 
 
