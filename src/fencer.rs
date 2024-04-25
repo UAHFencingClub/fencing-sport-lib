@@ -13,12 +13,6 @@ pub struct SimpleFencer {
     clubs: Vec<Club>
 }
 
-impl Fencer for &SimpleFencer {
-    fn dummy1(&self) {
-        
-    }
-}
-
 impl Fencer for SimpleFencer {
     fn dummy1(&self) {}
 }
