@@ -29,7 +29,7 @@ impl<T: Fencer> BoutsCreator<T> for SimpleBoutsCreator {
 #[derive(Debug)]
 pub struct PoolSheet<'a, T: Fencer> {
     fencers: Vec<T>,
-    bouts: RefCell<IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>>,
+    pub bouts: RefCell<IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>>,
 }
 
 impl<'a, 'b, T: Fencer> PoolSheet<'a, T> {
