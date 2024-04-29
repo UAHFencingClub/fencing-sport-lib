@@ -47,7 +47,7 @@ impl fmt::Display for FencerVsError {
 // Maybe make this take in boxes to fencers?
 #[derive(Debug)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct FencerVs<'a, T: Fencer>(pub &'a T, pub &'a T);
 
 impl<'a, T: Fencer> FencerVs<'a, T>{
