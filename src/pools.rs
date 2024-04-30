@@ -77,7 +77,7 @@ where
     }
 }
 
-impl <'a, 'b, T: Fencer> Iterator for PoolSheet<'a, T>
+impl <'a, T: Fencer> Iterator for PoolSheet<'a, T>
 {
     type Item = &'a Bout<'a, T>;
     fn next(&mut self) -> Option<Self::Item>
@@ -173,15 +173,27 @@ mod tests {
         let json_fencer1 = serde_json::from_str::<SimpleFencer>(r#"{"name":"Fencer1","clubs":[]}"#).unwrap();
         let json_fencer2 = serde_json::from_str::<SimpleFencer>(r#"{"name":"Fencer2","clubs":[]}"#).unwrap();
 
+        println!("Address of initial fencers: {:p}", &fencers[0]);
+        println!("Address of initial fencer0: {:p}", fencers.get(0).unwrap());
+
+
         let mut pool_sheet = PoolSheet::builder()
             .add_fencers(fencers.into_iter())
             .with_bout_order(SimpleBoutsCreator)
             .build()
             .unwrap();
 
+        println!("Address of poolsheet fencers: {:p}", &pool_sheet.fencers);
+        for i in 0..4 {
+        println!("Address of individual fencer[{i}]: {:p}", pool_sheet.fencers.get(i).unwrap());
+        }
+
+        println!("Json Fencers: {:p} {:p}",&json_fencer1,&json_fencer2);
         let a_versus = FencerVs::new(&json_fencer1, &json_fencer2).unwrap();
 
         let a_bout = pool_sheet.get_bout_mut(a_versus);
+        println!("The fencer in bout {:p}", a_bout.fencers.0);
+        println!("The fencer in bout {:p}", a_bout.fencers.1);
         a_bout.update_score(FencerScore {
             fencer: &json_fencer1,
             score: 0,

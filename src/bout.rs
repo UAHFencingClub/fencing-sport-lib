@@ -12,7 +12,7 @@ pub struct FencerScore<'a, T: Fencer> {
 
 #[derive(Debug)]
 pub struct Bout<'a, T: Fencer>{
-    fencers: FencerVs<'a, T>,
+    pub fencers: FencerVs<'a, T>,
     scores: Option<(FencerScore<'a, T>, FencerScore<'a, T>)>,
 }
 
