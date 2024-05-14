@@ -3,11 +3,15 @@ use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::default;
 use std::io::SeekFrom;
+use std::ops::Index;
+use std::slice::SliceIndex;
+use std::hash;
+use std::hash::Hash;
 
 use indexmap::map::Iter;
 use indexmap::IndexMap;
 
-use crate::bout::{Bout, FencerVs, FencerVsError};
+use crate::bout::{Bout, FencerVsError};
 use crate::fencer::{self, Fencer};
 use crate::organizations::usafencing::pool_bout_orders::{get_default_order, PoolOrderError};
 
@@ -43,31 +47,71 @@ impl From<PoolOrderError> for PoolSheetError {
     }
 }
 
-pub struct PoolSheet<'a, T: Fencer> {
-    fencers: Vec<T>,
-    bout_order: Vec<(usize, usize)>,
-    bouts: HashMap<FencerVs<'a, T>, Bout<'a, T>>
+// Maybe make this take in boxes to fencers?
+#[derive(Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy)]
+pub struct PoolVs<T: Fencer>(T, T);
+
+impl<T: Fencer> PoolVs<T>{
+    pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, FencerVsError>{
+        if fencer_a == fencer_b {
+            return Err(FencerVsError::SameFencer);
+        }
+        Ok(PoolVs(fencer_a,fencer_b))
+    }
 }
 
-impl<'a, T> PoolSheet<'a, T> 
+impl<T: Fencer> Hash for PoolVs<T> {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        match self {
+            PoolVs(a, b) if a > b => {
+                a.hash(state);
+                b.hash(state);
+            }
+            PoolVs(a, b) if b > a => {
+                b.hash(state);
+                a.hash(state);
+            }
+            _ => {panic!("A FencerVs struct should not have its 2 items be the same.")}
+        }
+    }
+}
+
+struct PoolFencerScore {
+    fencer: usize,
+    score: usize,
+}
+pub struct PoolBout{
+    fencers: (usize, usize),
+    scores: Option<(PoolFencerScore, PoolFencerScore)>,
+}
+
+pub struct PoolSheet<T: Fencer> {
+    fencers: Vec<T>,
+    bout_order: Vec<(usize, usize)>,
+    bouts: HashMap<(usize, usize), PoolBout>
+}
+
+impl<T> PoolSheet<T> 
 where
     T: Fencer,
 {
-    pub fn builder<U: BoutsCreator<T>>() -> PoolSheetBuilder<'a, T, U> {
+    pub fn builder<U: BoutsCreator<T>>() -> PoolSheetBuilder<T, U> {
         PoolSheetBuilder::default()
     }
 
-    pub fn get_bout(&mut self, versus: FencerVs<'a, T>) -> &Bout<'a, T>{
+    pub fn get_bout(&mut self, versus: PoolVs<T>) -> &Bout<T>{
         // TODO examine the use of clone here
         self.bouts.entry(versus.clone()).or_insert_with(|| {
-            assert!(self.fencers.contains(versus.0) && self.fencers.contains(versus.1));
+            assert!(self.fencers.0.contains(versus.0) && self.fencers.0.contains(versus.1));
             Bout::new(versus)
         })
     }
 
-    pub fn get_bout_mut(&mut self, versus: FencerVs<'a, T>) -> &mut Bout<'a, T>{
+    pub fn get_bout_mut(&mut self, versus: PoolVs<T>) -> &mut Bout<T>{
         self.bouts.entry(versus.clone()).or_insert_with(|| {
-            assert!(self.fencers.contains(versus.0) && self.fencers.contains(versus.1));
+            assert!(self.fencers.0.contains(versus.0) && self.fencers.0.contains(versus.1));
             Bout::new(versus)
         })
     }
@@ -77,37 +121,34 @@ where
     }
 }
 
-impl <'a, T: Fencer> Iterator for PoolSheet<'a, T>
+impl <T: Fencer> Iterator for PoolSheet<T>
 {
-    type Item = &'a Bout<'a, T>;
+    type Item = (&'a T, &'a T);
     fn next(&mut self) -> Option<Self::Item>
     {
-        todo!()
-        // let (fencer_a_index, fencer_b_index) = self.bout_order.iter().next()?;
-        // let fencer_a = self.fencers.get(*fencer_a_index).unwrap();
-        // let fencer_b = self.fencers.get(*fencer_b_index).unwrap();
-        // let versus = FencerVs::new(fencer_a, fencer_b).unwrap();
-        // Some(self.get_bout(versus))
+        // todo!()
+        let (fencer_a_index, fencer_b_index) = self.bout_order.iter().next()?;
+        let fencer_a = self.fencers.0.get(*fencer_a_index).unwrap();
+        let fencer_b = self.fencers.0.get(*fencer_b_index).unwrap();
+        Some((fencer_a, fencer_b))
     }
 }
 
-pub struct PoolSheetBuilder<'a, T: Fencer, U: BoutsCreator<T>> {
+pub struct PoolSheetBuilder<T: Fencer, U: BoutsCreator<T>> {
     fencers: Vec<T>,
     bout_order: Option<U>,
-    bouts: HashMap<FencerVs<'a, T>, Bout<'a, T>>
 }
 
-impl <'a, T: Fencer, U: BoutsCreator<T>> Default for PoolSheetBuilder<'a, T, U> {
+impl <T: Fencer, U: BoutsCreator<T>> Default for PoolSheetBuilder<T, U> {
     fn default() -> Self {
         PoolSheetBuilder {
             fencers: Vec::new(),
             bout_order: None,
-            bouts: HashMap::new(),
         }
     }
 }
 
-impl <'a, T: Fencer, U: BoutsCreator<T>> PoolSheetBuilder<'a, T, U> {
+impl <T: Fencer, U: BoutsCreator<T>> PoolSheetBuilder<T, U> {
     pub fn add_fencers<I>(mut self, fencers: I) -> Self
     where
         I: Iterator<Item = T>
@@ -126,13 +167,34 @@ impl <'a, T: Fencer, U: BoutsCreator<T>> PoolSheetBuilder<'a, T, U> {
         self
     }
 
-    pub fn build(mut self) -> Result<PoolSheet<'a, T>, PoolSheetError> {
+    pub fn build(mut self) -> Result<PoolSheet<T>, PoolSheetError> {
         let bout_order = self.bout_order.ok_or(PoolSheetError::BoutOrderUnspecified)?.get_order(&mut self.fencers)?;
+
         Ok(PoolSheet {
             fencers: self.fencers,
             bout_order,
             bouts: HashMap::new()
         })
+    }
+}
+
+struct FencerList<T>(Vec<T>);
+
+impl<T> FencerList<T> {
+    fn new(fencers: Vec<T>) -> Self {
+        FencerList(fencers)
+    }
+}
+
+impl<T, Idx> Index<Idx> for FencerList<T>
+where
+    Idx: SliceIndex<[T], Output = T>,
+{
+    type Output = T;
+
+    #[inline(always)]
+    fn index(&self, index: Idx) -> &Self::Output {
+        self.0.index(index)
     }
 }
 
@@ -185,7 +247,7 @@ mod tests {
 
         println!("Address of poolsheet fencers: {:p}", &pool_sheet.fencers);
         for i in 0..4 {
-        println!("Address of individual fencer[{i}]: {:p}", pool_sheet.fencers.get(i).unwrap());
+        println!("Address of individual fencer[{i}]: {:p}", pool_sheet.fencers.0.get(i).unwrap());
         }
 
         println!("Json Fencers: {:p} {:p}",&json_fencer1,&json_fencer2);
