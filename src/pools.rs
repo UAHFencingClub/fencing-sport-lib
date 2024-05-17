@@ -40,7 +40,7 @@ where
     T: Fencer,
 {
     pub fn new<U: BoutsCreator<T>>(
-        fencers: &'a mut [T],
+        fencers: &'a [T],
         bout_creator: &U,
     ) -> Result<PoolSheet<'a, T>, BoutCreationError> {
         match bout_creator.get_order(fencers) {
@@ -108,14 +108,14 @@ mod tests {
 
     #[test]
     fn iter_test() {
-        let mut fencers = [
+        let fencers = [
             SimpleFencer::new("Fencer1"),
             SimpleFencer::new("Fencer2"),
             SimpleFencer::new("Fencer3"),
             SimpleFencer::new("Fencer4"),
         ];
 
-        let pool_sheet = PoolSheet::new(&mut fencers, &SimpleBoutsCreator).unwrap();
+        let pool_sheet = PoolSheet::new(&fencers, &SimpleBoutsCreator).unwrap();
         for bout in pool_sheet.iter() {
             println!("{bout:#?}");
         }
@@ -135,7 +135,7 @@ mod tests {
         let json_fencer2 =
             serde_json::from_str::<SimpleFencer>(r#"{"name":"Fencer2","clubs":[]}"#).unwrap();
 
-        let mut pool_sheet = PoolSheet::new(&mut fencers, &SimpleBoutsCreator).unwrap();
+        let mut pool_sheet = PoolSheet::new(&fencers, &SimpleBoutsCreator).unwrap();
 
         let a_versus = FencerVs::new(&json_fencer1, &json_fencer2).unwrap();
 
