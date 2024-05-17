@@ -1,9 +1,10 @@
 use std::cell::RefCell;
 use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 
 use indexmap::IndexMap;
 
-use crate::bout::{Bout, FencerVs, FencerVsError};
+use crate::bout::{Bout, FencerScore, FencerVs, FencerVsError};
 use crate::fencer::Fencer;
 use crate::organizations::usafencing::pool_bout_orders::{get_default_order, PoolOrderError};
 
@@ -27,39 +28,76 @@ impl<T: Fencer> BoutsCreator<T> for SimpleBoutsCreator {
 }
 
 #[derive(Debug)]
-pub struct PoolSheet<'a, T: Fencer> {
-    fencers: Vec<T>,
-    pub bouts: RefCell<IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>>,
+pub struct FencerList<T: Fencer>(Vec<T>);
+
+#[derive(Debug)]
+pub enum PoolSheetError {
+    Err1,
+    Err2,
+    Err3,
 }
 
-impl<'a, 'b, T: Fencer> PoolSheet<'a, T> {
-    pub fn add_fencer(&mut self, fencer: T) {
-        self.fencers.push(fencer);
-    }
+// pub struct PoolSheetBuilder<'a, T: Fencer, U: BoutsCreator<T>> {
+//     fencers: Vec<T>,
+//     bout_order: Option<U>,
+//     bouts: HashMap<FencerVs<'a, T>, Bout<'a, T>>
+// }
 
-    pub fn add_fencers<I>(&mut self, fencers: I)
-    where
-        I: Iterator<Item = T>,
-    {
-        self.fencers.extend(fencers);
-    }
+// impl <'a, T: Fencer, U: BoutsCreator<T>> Default for PoolSheetBuilder<'a, T, U> {
+//     fn default() -> Self {
+//         PoolSheetBuilder {
+//             fencers: Vec::new(),
+//             bout_order: None,
+//             bouts: HashMap::new(),
+//         }
+//     }
+// }
 
-    pub fn get_fencers(&self) -> &Vec<T>{
-        &self.fencers
-    }
+// impl <'a, T: Fencer, U: BoutsCreator<T>> PoolSheetBuilder<'a, T, U> {
+//     pub fn add_fencers<I>(mut self, fencers: I) -> Self
+//     where
+//         I: Iterator<Item = T>
+//     {
+//         self.fencers.extend(fencers);
+//         self
+//     }
 
-    pub fn create_bouts<C>(&'b self, creator: &C) -> Result<(), BoutCreationError>
-    where
-        C: BoutsCreator<T>,
-        'b: 'a
-    {
-        match creator.get_order(&self.fencers) {
+//     pub fn add_fencer(mut self, fencer: T) -> Self {
+//         self.fencers.push(fencer);
+//         self
+//     }
+
+//     pub fn with_bout_order(mut self, bout_creator: U) -> Self {
+//         self.bout_order = Some(bout_creator);
+//         self
+//     }
+
+//     pub fn build(mut self) -> Result<PoolSheet<'a, T>, PoolSheetError> {
+//         let bout_order = self.bout_order.ok_or(PoolSheetError::BoutOrderUnspecified)?.get_order(&mut self.fencers)?;
+//         Ok(PoolSheet {
+//             fencers: self.fencers,
+//             bout_order,
+//             bouts: HashMap::new()
+//         })
+//     }
+// }
+
+
+#[derive(Debug)]
+pub struct PoolSheet<'a, T: Fencer> (IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>);
+
+impl<'a, T> PoolSheet<'a, T> 
+where
+    T: Fencer,
+{
+    pub fn new<U: BoutsCreator<T>>(fencers: &'a mut [T], bout_creator: &U) -> Result<PoolSheet<'a, T>, BoutCreationError> {
+        match bout_creator.get_order(fencers) {
             Ok(bout_indexes) => {
-                let mut bouts_map = self.bouts.borrow_mut();
+                let mut bouts_map = IndexMap::new();
                 for pair in bout_indexes.into_iter() {
                     match FencerVs::new(
-                        self.fencers.get(pair.0-1).unwrap(),
-                        self.fencers.get(pair.1-1).unwrap()
+                        fencers.get(pair.0-1).unwrap(),
+                        fencers.get(pair.1-1).unwrap()
                     ) {
                         Ok(versus) => {
                             bouts_map.insert(versus.clone(), Bout::new(versus));
@@ -69,21 +107,34 @@ impl<'a, 'b, T: Fencer> PoolSheet<'a, T> {
                         }
                     }
                 }
-                Ok(())
+                Ok(PoolSheet(bouts_map))
             }
             Err(err) => {
                 Err(BoutCreationError::PoolOrderError(err))
             }
         }
     }
-}
 
-impl<'a, T: Fencer> Default for PoolSheet<'a, T> {
-    fn default() -> Self {
-        PoolSheet {
-            fencers: Vec::new(),
-            bouts: RefCell::new(IndexMap::new()),
-        }
+    pub fn iter(&self) -> indexmap::map::Iter<'_, FencerVs<'_, T>, Bout<'_, T>>{
+        self.0.iter()
+    }
+
+    pub fn get_bout(&mut self, versus: &FencerVs<'a, T>) -> Option<&Bout<'a, T>>{
+        self.0.get(versus)
+    }
+
+    pub fn update_score(&mut self, fencer_a: FencerScore<'a, T>, fencer_b: FencerScore<'a, T>) -> Result<&Bout<T>, PoolSheetError>{
+        let versus = FencerVs::new(fencer_a.fencer, fencer_b.fencer).map_err(|_| PoolSheetError::Err2)?;
+        let bout = self.0.get_mut(&versus).ok_or(PoolSheetError::Err1)?;
+        bout.update_score(&fencer_a, &fencer_b).map_err(|_| PoolSheetError::Err3)?;
+        Ok(&*bout)
+    }
+    // pub fn get_bout_mut(&mut self, versus: &FencerVs<'a, T>) -> Option<&mut Bout<'a, T>>{
+    //     self.0.get_mut(versus)
+    // }
+
+    pub fn get_results(&self) -> Result<(), PoolSheetError> {
+        todo!()
     }
 }
 
@@ -94,24 +145,22 @@ mod tests {
 
     #[test]
     fn iter_test() {
-        let fencers = [
+        let mut fencers = [
             SimpleFencer::new("Fencer1"),
             SimpleFencer::new("Fencer2"),
             SimpleFencer::new("Fencer3"),
             SimpleFencer::new("Fencer4"),
         ];
 
-        let mut pool_sheet = PoolSheet::default();
-        pool_sheet.add_fencers(fencers.into_iter());
-        let _ = pool_sheet.create_bouts(&SimpleBoutsCreator);
-        for bout in pool_sheet.bouts.borrow().iter() {
+        let mut pool_sheet = PoolSheet::new(&mut fencers, &SimpleBoutsCreator).unwrap();
+        for bout in pool_sheet.iter() {
             println!("{bout:#?}");
         }
     }
 
     #[test]
     fn bout_addressing() {
-        let fencers = [
+        let mut fencers = [
             SimpleFencer::new("Fencer1"),
             SimpleFencer::new("Fencer2"),
             SimpleFencer::new("Fencer3"),
@@ -121,15 +170,11 @@ mod tests {
         let json_fencer1 = serde_json::from_str::<SimpleFencer>(r#"{"name":"Fencer1","clubs":[]}"#).unwrap();
         let json_fencer2 = serde_json::from_str::<SimpleFencer>(r#"{"name":"Fencer2","clubs":[]}"#).unwrap();
 
-        let mut pool_sheet = PoolSheet::default();
-        pool_sheet.add_fencers(fencers.clone().into_iter());
-        let _ = pool_sheet.create_bouts(&SimpleBoutsCreator);
+        let mut pool_sheet = PoolSheet::new(&mut fencers, &SimpleBoutsCreator).unwrap();
 
         let a_versus = FencerVs::new(&json_fencer1, &json_fencer2).unwrap();
 
-        let mut bouts = pool_sheet.bouts.borrow_mut();
-        let a_bout = bouts.get_mut(&a_versus).unwrap();
-        a_bout.update_score(FencerScore {
+        pool_sheet.update_score(FencerScore {
             fencer: &json_fencer1,
             score: 0,
             cards: Cards::default(),
@@ -137,7 +182,7 @@ mod tests {
             fencer: &json_fencer2,
             score: 0,
             cards: Cards::default(),
-        });
-        println!("\nSingle Bout: {a_bout:#?}");
+        }).unwrap();
+        println!("\nSingle Bout: {:#?}", pool_sheet.get_bout(&a_versus));
     }
 }

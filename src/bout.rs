@@ -13,12 +13,32 @@ pub struct FencerScore<'a, T: Fencer> {
 #[derive(Debug)]
 pub struct Bout<'a, T: Fencer>{
     fencers: FencerVs<'a, T>,
-    scores: Option<(FencerScore<'a, T>, FencerScore<'a, T>)>,
+    scores: Option<(u8, u8)>,
 }
 
 impl<'a, T: Fencer> Bout<'a, T> {
-    pub fn update_score(&mut self, score_a: FencerScore<'a, T>, score_b: FencerScore<'a, T>) {
-        self.scores = Some((score_a, score_b));
+    pub fn update_score(&mut self, score_a: &FencerScore<'a, T>, score_b: &FencerScore<'a, T>) -> Result<(),()>{
+        let pos_a = self.fencers.contains_pos(score_a.fencer);
+        let pos_b = self.fencers.contains_pos(score_b.fencer);
+        if pos_a == pos_b { return Err(()) }
+
+        let score_0;
+        let score_1;
+
+        match pos_a {
+            TuplePos::First  => {score_0 = score_a.score; score_1 = score_b.score},
+            TuplePos::Second => {score_1 = score_a.score; score_0 = score_b.score},
+            TuplePos::None   => return Err(()),
+        }
+
+        match pos_b {
+            TuplePos::None   => return Err(()),
+            _ => {},
+        }
+
+        self.scores = Some((score_0, score_1));
+
+        Ok(())
     } 
 
     pub fn new(fencers: FencerVs<'a, T>) -> Self {
@@ -44,6 +64,13 @@ impl fmt::Display for FencerVsError {
     }
 }
 
+#[derive(PartialEq, Eq)]
+enum TuplePos {
+    First,
+    Second,
+    None,
+} 
+
 // Maybe make this take in boxes to fencers?
 #[derive(Debug)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
@@ -56,6 +83,16 @@ impl<'a, T: Fencer> FencerVs<'a, T>{
             return Err(FencerVsError::SameFencer);
         }
         Ok(FencerVs(fencer_a,fencer_b))
+    }
+
+    fn contains_pos(&self, fencer: &T) -> TuplePos {
+        if fencer == self.0 {
+            TuplePos::First
+        } else if fencer == self.1 {
+            TuplePos::Second
+        } else {
+            TuplePos::None
+        }
     }
 }
 
