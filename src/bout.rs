@@ -3,11 +3,11 @@ use std::{
     hash::{self, Hash},
 };
 
-use crate::cards::Cards;
 use crate::{
     cards,
     fencer::{self, Fencer},
 };
+use crate::{cards::Cards, organizations::usafencing::pool_bout_orders::SPECIAL_ORDERS};
 
 #[derive(Debug)]
 pub struct FencerScore<'a, T: Fencer> {
@@ -38,8 +38,8 @@ impl<'a, T: Fencer> Bout<'a, T> {
         score_a: &FencerScore<'a, T>,
         score_b: &FencerScore<'a, T>,
     ) -> Result<(), ()> {
-        let pos_a = self.fencers.contains_pos(score_a.fencer);
-        let pos_b = self.fencers.contains_pos(score_b.fencer);
+        let pos_a = self.fencers.pos(score_a.fencer);
+        let pos_b = self.fencers.pos(score_b.fencer);
         if pos_a == pos_b {
             return Err(());
         }
@@ -67,6 +67,23 @@ impl<'a, T: Fencer> Bout<'a, T> {
         self.scores = Some((score_0, score_1));
 
         Ok(())
+    }
+
+    pub fn get_scores(&self) -> Option<(FencerScore<T>, FencerScore<T>)> {
+        self.scores.map(|scores| {
+            (
+                FencerScore::new(self.fencers.0, scores.0),
+                FencerScore::new(self.fencers.1, scores.1),
+            )
+        })
+    }
+
+    pub fn get_score(&self, fencer: &T) -> Option<u8> {
+        match self.fencers.pos(fencer) {
+            TuplePos::First => Some(self.scores?.0),
+            TuplePos::Second => Some(self.scores?.1),
+            TuplePos::None => None,
+        }
     }
 
     pub fn new(fencers: FencerVs<'a, T>) -> Self {
@@ -110,7 +127,7 @@ impl<'a, T: Fencer> FencerVs<'a, T> {
         Ok(FencerVs(fencer_a, fencer_b))
     }
 
-    fn contains_pos(&self, fencer: &T) -> TuplePos {
+    fn pos(&self, fencer: &T) -> TuplePos {
         if fencer == self.0 {
             TuplePos::First
         } else if fencer == self.1 {
