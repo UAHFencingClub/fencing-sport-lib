@@ -1,29 +1,13 @@
+pub mod bout_creation;
+
+use std::cell::RefCell;
 use std::collections::hash_map::RandomState;
 
 use indexmap::IndexMap;
 
 use crate::bout::{Bout, FencerScore, FencerVs, FencerVsError};
 use crate::fencer::Fencer;
-use crate::organizations::usafencing::pool_bout_orders::{get_default_order, PoolOrderError};
-
-#[derive(Debug)]
-pub enum BoutCreationError {
-    VsError(FencerVsError, String),
-    PoolOrderError(PoolOrderError),
-}
-
-pub trait BoutsCreator<T: Fencer> {
-    fn get_order(&self, fencers: &[T]) -> Result<Vec<(usize, usize)>, PoolOrderError>;
-}
-
-pub struct SimpleBoutsCreator;
-
-impl<T: Fencer> BoutsCreator<T> for SimpleBoutsCreator {
-    fn get_order(&self, fencers: &[T]) -> Result<Vec<(usize, usize)>, PoolOrderError> {
-        let fencer_count = fencers.len();
-        get_default_order(fencer_count)
-    }
-}
+use bout_creation::{BoutCreationError, BoutsCreator, SimpleBoutsCreator};
 
 #[derive(Debug)]
 pub enum PoolSheetError {
@@ -33,17 +17,20 @@ pub enum PoolSheetError {
 }
 
 #[derive(Debug)]
-pub struct PoolSheet<'a, T: Fencer>(IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>);
+pub struct PoolSheet<'a, T: Fencer> {
+    fencers: Box<Vec<T>>,
+    bouts: RefCell<IndexMap<FencerVs<'a, T>, Bout<'a, T>, RandomState>>,
+}
 
 impl<'a, T> PoolSheet<'a, T>
 where
     T: Fencer,
 {
     pub fn new<U: BoutsCreator<T>>(
-        fencers: &'a [T],
+        fencers: Vec<T>,
         bout_creator: &U,
     ) -> Result<PoolSheet<'a, T>, BoutCreationError> {
-        match bout_creator.get_order(fencers) {
+        match bout_creator.get_order(&fencers) {
             Ok(bout_indexes) => {
                 let mut bouts_map = IndexMap::new();
                 for pair in bout_indexes.into_iter() {
@@ -62,7 +49,10 @@ where
                         }
                     }
                 }
-                Ok(PoolSheet(bouts_map))
+                Ok(PoolSheet {
+                    fencers: Box::new(fencers),
+                    bouts: RefCell::new(bouts_map),
+                })
             }
             Err(err) => Err(BoutCreationError::PoolOrderError(err)),
         }
