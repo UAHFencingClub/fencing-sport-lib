@@ -33,10 +33,10 @@ pub struct Bout<'a, T: Fencer> {
 }
 
 impl<'a, T: Fencer> Bout<'a, T> {
-    pub fn update_score(
+    pub fn update_score<'b>(
         &mut self,
-        score_a: &FencerScore<'a, T>,
-        score_b: &FencerScore<'a, T>,
+        score_a: &FencerScore<'b, T>,
+        score_b: &FencerScore<'b, T>,
     ) -> Result<(), ()> {
         let pos_a = self.fencers.pos(score_a.fencer);
         let pos_b = self.fencers.pos(score_b.fencer);
