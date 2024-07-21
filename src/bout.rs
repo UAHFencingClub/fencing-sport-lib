@@ -1,27 +1,30 @@
-use std::{fmt, hash::{self, Hash}};
+use std::{
+    fmt,
+    hash::{self, Hash},
+};
 
-use crate::fencer::Fencer;
 use crate::cards::Cards;
+use crate::fencer::Fencer;
 
 #[derive(Debug)]
-pub struct FencerScore<'a, T: Fencer> {
-    pub fencer: &'a T,
+pub struct FencerScore<T: Fencer> {
+    pub fencer: T,
     pub score: u8,
-    pub cards: Cards, 
+    pub cards: Cards,
 }
 
 #[derive(Debug)]
-pub struct Bout<'a, T: Fencer>{
-    fencers: FencerVs<'a, T>,
-    scores: Option<(FencerScore<'a, T>, FencerScore<'a, T>)>,
+pub struct Bout<T: Fencer> {
+    fencers: FencerVs<T>,
+    scores: Option<(FencerScore<T>, FencerScore<T>)>,
 }
 
-impl<'a, T: Fencer> Bout<'a, T> {
-    pub fn update_score(&mut self, score_a: FencerScore<'a, T>, score_b: FencerScore<'a, T>) {
+impl<T: Fencer> Bout<T> {
+    pub fn update_score(&mut self, score_a: FencerScore<T>, score_b: FencerScore<T>) {
         self.scores = Some((score_a, score_b));
-    } 
+    }
 
-    pub fn new(fencers: FencerVs<'a, T>) -> Self {
+    pub fn new(fencers: FencerVs<T>) -> Self {
         Bout {
             fencers,
             scores: None,
@@ -29,8 +32,7 @@ impl<'a, T: Fencer> Bout<'a, T> {
     }
 }
 
-#[derive(Debug)]
-#[derive(Hash)]
+#[derive(Debug, Hash)]
 pub enum FencerVsError {
     SameFencer,
 }
@@ -44,22 +46,19 @@ impl fmt::Display for FencerVsError {
     }
 }
 
-// Maybe make this take in boxes to fencers?
-#[derive(Debug)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-#[derive(Clone)]
-pub struct FencerVs<'a, T: Fencer>(pub &'a T, pub &'a T);
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+pub struct FencerVs<T: Fencer>(T, T);
 
-impl<'a, T: Fencer> FencerVs<'a, T>{
-    pub fn new(fencer_a: &'a T, fencer_b: &'a T) -> Result<Self, FencerVsError>{
+impl<T: Fencer> FencerVs<T> {
+    pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, FencerVsError> {
         if fencer_a == fencer_b {
             return Err(FencerVsError::SameFencer);
         }
-        Ok(FencerVs(fencer_a,fencer_b))
+        Ok(FencerVs(fencer_a, fencer_b))
     }
 }
 
-impl<'a, T: Fencer> Hash for FencerVs<'a, T> {
+impl<T: Fencer> Hash for FencerVs<T> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         match self {
             FencerVs(a, b) if a > b => {
@@ -70,7 +69,9 @@ impl<'a, T: Fencer> Hash for FencerVs<'a, T> {
                 b.hash(state);
                 a.hash(state);
             }
-            _ => {panic!("A FencerVs struct should not have its 2 items be the same.")}
+            _ => {
+                panic!("A FencerVs struct should not have its 2 items be the same.")
+            }
         }
     }
 }
