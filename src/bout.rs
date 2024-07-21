@@ -32,7 +32,7 @@ pub struct Bout<'a, T: Fencer> {
     scores: Option<(u8, u8)>,
 }
 
-impl<'a, T: Fencer> Bout<'a, T> {
+impl<'a, T: Fencer + 'static> Bout<'a, T> {
     pub fn update_score<'b>(
         &mut self,
         score_a: &FencerScore<'b, T>,
@@ -119,7 +119,7 @@ enum TuplePos {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct FencerVs<'a, T: Fencer>(pub &'a T, pub &'a T);
 
-impl<'a, T: Fencer> FencerVs<'a, T> {
+impl<'a, T: Fencer + 'static> FencerVs<'a, T> {
     pub fn new(fencer_a: &'a T, fencer_b: &'a T) -> Result<Self, FencerVsError> {
         if fencer_a == fencer_b {
             return Err(FencerVsError::SameFencer);

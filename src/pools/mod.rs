@@ -26,7 +26,7 @@ pub struct PoolSheet<T: Fencer + 'static> {
     bouts: IndexMap<FencerVs<'this, T>, Bout<'this, T>, RandomState>,
 }
 
-impl<T: Fencer> PoolSheet<T> {
+impl<T: Fencer + 'static> PoolSheet<T> {
     pub fn create(fencers: Vec<T>) -> Self {
         PoolSheet::new(fencers, |_| IndexMap::new())
     }
@@ -49,31 +49,36 @@ impl<T: Fencer> PoolSheet<T> {
         self.borrow_bouts()
     }
 
-    //     pub fn update_score(
-    //         &mut self,
-    //         fencer_a: FencerScore<T>,
-    //         fencer_b: FencerScore<T>,
-    //     ) -> Result<&Bout<T>, PoolSheetError>
-    // // where
-    //     //     'b: 'a,
-    //     {
-    //         let test_a = fencer_a.fencer.clone();
-    //         // let score_a = fencer_a.score;
-    //         let test_b = fencer_b.fencer.clone();
-    //         // let score_b = fencer_b.score;
+    pub fn update_score(
+        &mut self,
+        fencer_a: FencerScore<T>,
+        fencer_b: FencerScore<T>,
+    ) -> Result<(), PoolSheetError>
+// ) -> Result<&Bout<T>, PoolSheetError>
+// where
+        //     'b: 'a,
+    {
+        let x =
+            FencerVs::new(fencer_a.fencer, fencer_b.fencer).map_err(|_| PoolSheetError::Err2)?;
+        // let (bout_key, _) = self.borrow_bouts().get_key_value(&x).unwrap();
+        // let test_a = fencer_a.fencer.clone();
+        // // let score_a = fencer_a.score;
+        // let test_b = fencer_b.fencer.clone();
+        // // let score_b = fencer_b.score;
 
-    //         // let new_score_a = FencerScore::new(&test_a, fencer_a.score);
-    //         let new_score_b = FencerScore::new(&test_b, fencer_b.score);
-    //         let x = self.with_bouts_mut(|bouts| {
-    //             let x = FencerVs::new(&test_a, &test_b).map_err(|_| PoolSheetError::Err2)?;
-    //             let bout = bouts.get_mut(&x).ok_or(PoolSheetError::Err1)?;
-    //             let y = bout.update_score(&fencer_a, &fencer_b);
-    //             // bout.update_score(&new_score_a, &new_score_b)
-    //             // .map_err(|_| PoolSheetError::Err3)?;
-    //             Ok(())
-    //         })?;
-    //         Err(PoolSheetError::Err1)
-    //     }
+        // // let new_score_a = FencerScore::new(&test_a, fencer_a.score);
+        // let new_score_b = FencerScore::new(&test_b, fencer_b.score);
+        self.with_bouts_mut(|bouts| {
+            unsafe {
+                let bout = bouts.get_mut(&x).ok_or(PoolSheetError::Err1)?;
+                bout.update_score(&fencer_a, &fencer_b)
+                    .map_err(|_| PoolSheetError::Err3)?;
+            }
+            Ok(())
+        })?;
+        // Err(PoolSheetError::Err1)
+        Ok(())
+    }
 }
 
 #[cfg(test)]
