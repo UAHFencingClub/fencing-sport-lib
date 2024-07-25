@@ -1,30 +1,33 @@
 use std::{
+    borrow::Borrow,
     fmt,
     hash::{self, Hash},
+    marker::PhantomData,
 };
 
 use crate::cards::Cards;
 use crate::fencer::Fencer;
 
 #[derive(Debug)]
-pub struct FencerScore<T: Fencer> {
+pub struct FencerScore<U: Fencer, T: Borrow<U>> {
     pub fencer: T,
     pub score: u8,
     pub cards: Cards,
+    _p: PhantomData<U>,
 }
 
 #[derive(Debug)]
-pub struct Bout<T: Fencer> {
-    fencers: FencerVs<T>,
-    scores: Option<(FencerScore<T>, FencerScore<T>)>,
+pub struct Bout<U: Fencer, T: Borrow<U>> {
+    fencers: FencerVs<U, T>,
+    scores: Option<(FencerScore<U, T>, FencerScore<U, T>)>,
 }
 
-impl<T: Fencer> Bout<T> {
-    pub fn update_score(&mut self, score_a: FencerScore<T>, score_b: FencerScore<T>) {
+impl<U: Fencer, T: Borrow<U>> Bout<U, T> {
+    pub fn update_score(&mut self, score_a: FencerScore<U, T>, score_b: FencerScore<U, T>) {
         self.scores = Some((score_a, score_b));
     }
 
-    pub fn new(fencers: FencerVs<T>) -> Self {
+    pub fn new(fencers: FencerVs<U, T>) -> Self {
         Bout {
             fencers,
             scores: None,
@@ -37,7 +40,6 @@ pub enum FencerVsError {
     SameFencer,
 }
 
-// Written with generative ai
 impl fmt::Display for FencerVsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -47,31 +49,72 @@ impl fmt::Display for FencerVsError {
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub struct FencerVs<T: Fencer>(T, T);
+pub struct FencerVs<U: Fencer, T: Borrow<U>>(T, T, PhantomData<U>);
 
-impl<T: Fencer> FencerVs<T> {
+impl<U: Fencer, T: Borrow<U>> FencerVs<U, T> {
     pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, FencerVsError> {
-        if fencer_a == fencer_b {
+        if fencer_a.borrow() == fencer_b.borrow() {
             return Err(FencerVsError::SameFencer);
         }
-        Ok(FencerVs(fencer_a, fencer_b))
+        Ok(FencerVs(fencer_a, fencer_b, PhantomData))
     }
 }
 
-impl<T: Fencer> Hash for FencerVs<T> {
+impl<U: Fencer, T: Borrow<U>> Hash for FencerVs<U, T> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        match self {
-            FencerVs(a, b) if a > b => {
+        let a = self.0.borrow();
+        let b = self.1.borrow();
+        match a.cmp(b) {
+            std::cmp::Ordering::Greater => {
                 a.hash(state);
                 b.hash(state);
             }
-            FencerVs(a, b) if b > a => {
+            std::cmp::Ordering::Less => {
                 b.hash(state);
                 a.hash(state);
             }
-            _ => {
+            std::cmp::Ordering::Equal => {
                 panic!("A FencerVs struct should not have its 2 items be the same.")
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::rc::Rc;
+
+    use crate::fencer::SimpleFencer;
+
+    use super::{Bout, FencerVs};
+
+    #[test]
+    fn bout_box_test() {
+        let fencer_a = Box::new(SimpleFencer::new("Alice"));
+        let fencer_b = Box::new(SimpleFencer::new("Bob"));
+
+        let versus: FencerVs<SimpleFencer, Box<SimpleFencer>> =
+            FencerVs::new(fencer_a, fencer_b).unwrap();
+        let bout = Bout::new(versus);
+
+        assert_eq!(
+            format!("{bout:?}"),
+            r#"Bout { fencers: FencerVs(SimpleFencer { name: "Alice", clubs: [] }, SimpleFencer { name: "Bob", clubs: [] }, PhantomData<fencing_sport_lib::fencer::SimpleFencer>), scores: None }"#
+        );
+    }
+
+    #[test]
+    fn bout_rc_test() {
+        let fencer_a = Rc::new(SimpleFencer::new("Alice"));
+        let fencer_b = Rc::new(SimpleFencer::new("Bob"));
+
+        let versus: FencerVs<SimpleFencer, Rc<SimpleFencer>> =
+            FencerVs::new(fencer_a, fencer_b).unwrap();
+        let bout = Bout::new(versus);
+
+        assert_eq!(
+            format!("{bout:?}"),
+            r#"Bout { fencers: FencerVs(SimpleFencer { name: "Alice", clubs: [] }, SimpleFencer { name: "Bob", clubs: [] }, PhantomData<fencing_sport_lib::fencer::SimpleFencer>), scores: None }"#
+        );
     }
 }
