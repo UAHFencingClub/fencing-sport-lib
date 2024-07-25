@@ -89,6 +89,21 @@ mod tests {
     use super::{Bout, FencerVs};
 
     #[test]
+    fn bout_owned_test() {
+        let fencer_a = SimpleFencer::new("Alice");
+        let fencer_b = SimpleFencer::new("Bob");
+
+        let versus: FencerVs<SimpleFencer, SimpleFencer> =
+            FencerVs::new(fencer_a, fencer_b).unwrap();
+        let bout = Bout::new(versus);
+
+        assert_eq!(
+            format!("{bout:?}"),
+            r#"Bout { fencers: FencerVs(SimpleFencer { name: "Alice", clubs: [] }, SimpleFencer { name: "Bob", clubs: [] }, PhantomData<fencing_sport_lib::fencer::SimpleFencer>), scores: None }"#
+        );
+    }
+
+    #[test]
     fn bout_box_test() {
         let fencer_a = Box::new(SimpleFencer::new("Alice"));
         let fencer_b = Box::new(SimpleFencer::new("Bob"));
