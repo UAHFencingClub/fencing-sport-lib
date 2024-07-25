@@ -62,21 +62,10 @@ impl<U: Fencer, T: Borrow<U>> FencerVs<U, T> {
 
 impl<U: Fencer, T: Borrow<U>> Hash for FencerVs<U, T> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        let a = self.0.borrow();
-        let b = self.1.borrow();
-        match a.cmp(b) {
-            std::cmp::Ordering::Greater => {
-                a.hash(state);
-                b.hash(state);
-            }
-            std::cmp::Ordering::Less => {
-                b.hash(state);
-                a.hash(state);
-            }
-            std::cmp::Ordering::Equal => {
-                panic!("A FencerVs struct should not have its 2 items be the same.")
-            }
-        }
+        let (a, b) = (self.0.borrow(), self.1.borrow());
+        let (a, b) = if a <= b { (a, b) } else { (b, a) };
+        a.hash(state);
+        b.hash(state);
     }
 }
 
