@@ -54,9 +54,10 @@ pub struct FencerVs<U: Fencer, T: Borrow<U>>(T, T, PhantomData<U>);
 impl<U: Fencer, T: Borrow<U>> FencerVs<U, T> {
     pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, FencerVsError> {
         if fencer_a.borrow() == fencer_b.borrow() {
-            return Err(FencerVsError::SameFencer);
+            Err(FencerVsError::SameFencer)
+        } else {
+            Ok(FencerVs(fencer_a, fencer_b, PhantomData))
         }
-        Ok(FencerVs(fencer_a, fencer_b, PhantomData))
     }
 }
 
