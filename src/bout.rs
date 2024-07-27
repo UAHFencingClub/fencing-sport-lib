@@ -33,7 +33,7 @@ pub struct Bout<U: Fencer, T: Borrow<U>> {
     scores: Option<(u8, u8)>,
 }
 
-impl<U: Fencer, T: Borrow<U>> Bout<U, T> {
+impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
     pub fn update_score<S: Borrow<U>>(
         &mut self,
         score_a: FencerScore<U, S>,
@@ -100,12 +100,20 @@ enum TuplePos {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct FencerVs<U: Fencer, T: Borrow<U>>(T, T, PhantomData<U>);
 
-impl<U: Fencer, T: Borrow<U>> FencerVs<U, T> {
+impl<U: Fencer, T: Borrow<U> + Clone> FencerVs<U, T> {
     pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, FencerVsError> {
         if fencer_a.borrow() == fencer_b.borrow() {
             Err(FencerVsError::SameFencer)
         } else {
             Ok(FencerVs(fencer_a, fencer_b, PhantomData))
+        }
+    }
+
+    pub fn get_fencer(&self, fencer: &U) -> Option<T> {
+        match self.pos(fencer) {
+            TuplePos::First => Some(self.0.clone()),
+            TuplePos::Second => Some(self.1.clone()),
+            TuplePos::None => None,
         }
     }
 
