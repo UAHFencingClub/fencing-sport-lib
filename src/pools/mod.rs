@@ -1,12 +1,13 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::hash_map::RandomState;
+use std::marker::PhantomData;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
 
 use crate::bout::{Bout, FencerScore, FencerVs, FencerVsError};
-use crate::fencer::Fencer;
+use crate::fencer::{self, Fencer};
 use crate::organizations::usafencing::pool_bout_orders::{get_default_order, PoolOrderError};
 use bout_creation::{BoutCreationError, BoutsCreator};
 
@@ -63,15 +64,16 @@ impl<T: Fencer> PoolSheet<T> {
         &mut self,
         fencer_a: FencerScore<T, T>,
         fencer_b: FencerScore<T, T>,
-    ) -> Result<(), PoolOrderError> {
+    ) -> Result<(), ()> {
         let fencer_a_fencer = Rc::new(fencer_a.fencer);
         let fencer_b_fencer = Rc::new(fencer_b.fencer);
 
-        let fencer_a = FencerScore::new()
+        let fencer_a = FencerScore::new(fencer_a_fencer.clone(), fencer_a.score, fencer_a.cards);
+        let fencer_b = FencerScore::new(fencer_b_fencer.clone(), fencer_b.score, fencer_b.cards);
+
         let x = FencerVs::new(fencer_a_fencer, fencer_b_fencer).unwrap();
         let bout = self.bouts.get_mut(&x).unwrap();
-        bout.update_score();
-        Ok(())
+        bout.update_score(fencer_a, fencer_b)
     }
 }
 
@@ -93,9 +95,7 @@ mod tests {
             SimpleFencer::new("Fencer4"),
         ];
 
-        let mut pool_sheet = PoolSheet::default();
-        pool_sheet.add_fencers(fencers.into_iter());
-        let _ = pool_sheet.create_bouts(&SimpleBoutsCreator);
+        let mut pool_sheet = PoolSheet::new(fencers.to_vec(), &SimpleBoutsCreator).unwrap();
         for bout in pool_sheet.iter() {
             println!("{bout:#?}");
         }
@@ -115,24 +115,14 @@ mod tests {
         let json_fencer2 =
             serde_json::from_str::<SimpleFencer>(r#"{"name":"Fencer2","clubs":[]}"#).unwrap();
 
-        let mut pool_sheet = PoolSheet::default();
-        pool_sheet.add_fencers(fencers.clone().into_iter());
-        let _ = pool_sheet.create_bouts(&SimpleBoutsCreator);
+        let mut pool_sheet = PoolSheet::new(fencers.to_vec(), &SimpleBoutsCreator).unwrap();
 
         let a_versus = FencerVs::new(json_fencer1.clone(), json_fencer2.clone()).unwrap();
 
         let smth = pool_sheet.update_score(
-            FencerScore {
-                fencer: json_fencer1,
-                score: 0,
-                cards: Cards::default(),
-            },
-            FencerScore {
-                fencer: json_fencer2,
-                score: 0,
-                cards: Cards::default(),
-            },
+            FencerScore::new(json_fencer1, 0, Cards::default()),
+            FencerScore::new(json_fencer2, 0, Cards::default()),
         );
-        println!("\nSingle Bout: {smth:#?}");
+        println!("\nSingle Bout: {pool_sheet:#?}");
     }
 }
