@@ -65,35 +65,46 @@ impl<T: Fencer> PoolSheet<T> {
         fencer_a: FencerScore<T, T>,
         fencer_b: FencerScore<T, T>,
     ) -> Result<(), ()> {
-        let fencer_a_fencer = Rc::new(fencer_a.fencer);
-        let fencer_b_fencer = Rc::new(fencer_b.fencer);
+        // Formatted weirdly to do some tests to make sure the new smart pointer gets dropped.
+        let buf;
+        // let testa;
+        // let testb;
+        {
+            let fencer_a_fencer = Rc::new(fencer_a.fencer.clone());
+            let fencer_b_fencer = Rc::new(fencer_b.fencer.clone());
 
-        let fencer_a: FencerScore<T, Rc<T>> =
-            FencerScore::new(fencer_a_fencer.clone(), fencer_a.score, fencer_a.cards);
-        let fencer_b: FencerScore<T, Rc<T>> =
-            FencerScore::new(fencer_b_fencer.clone(), fencer_b.score, fencer_b.cards);
+            let fencer_a: FencerScore<T, Rc<T>> =
+                FencerScore::new(fencer_a_fencer.clone(), fencer_a.score, fencer_a.cards);
+            let fencer_b: FencerScore<T, Rc<T>> =
+                FencerScore::new(fencer_b_fencer.clone(), fencer_b.score, fencer_b.cards);
 
-        let x = FencerVs::new(fencer_a.fencer, fencer_b.fencer).unwrap();
-        let (_, vs, bout) = self.bouts.get_full_mut(&x).unwrap();
+            let x = FencerVs::new(fencer_a.fencer, fencer_b.fencer).unwrap();
+            buf = self.bouts.get_full_mut(&x).unwrap();
+
+            // testa = fencer_a_fencer;
+            // testb = fencer_b_fencer;
+        }
+
+        // let acs = Rc::strong_count(&testa);
+        // let bcs = Rc::strong_count(&testb);
+        // let acw = Rc::weak_count(&testa);
+        // let bcw = Rc::weak_count(&testb);
+
+        // println!("Counts {}, {}, {}, {}", acs, bcs, acw, bcw);
+
+        let (_, vs, bout) = buf;
 
         let fencer_a = FencerScore::new(
-            vs.get_fencer(&fencer_a_fencer).unwrap(),
+            vs.get_fencer(&fencer_a.fencer).unwrap(),
             fencer_a.score,
             fencer_a.cards,
         );
 
         let fencer_b = FencerScore::new(
-            vs.get_fencer(&fencer_b_fencer).unwrap(),
+            vs.get_fencer(&fencer_b.fencer).unwrap(),
             fencer_b.score,
             fencer_b.cards,
         );
-
-        let acs = Rc::strong_count(&fencer_a_fencer);
-        let bcs = Rc::strong_count(&fencer_b_fencer);
-        let acw = Rc::weak_count(&fencer_a_fencer);
-        let bcw = Rc::weak_count(&fencer_b_fencer);
-
-        println!("Counts {}, {}, {}, {}", acs, bcs, acw, bcw);
 
         bout.update_score(fencer_a, fencer_b)
     }
