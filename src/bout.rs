@@ -16,6 +16,17 @@ pub struct FencerScore<U: Fencer, T: Borrow<U>> {
     _p: PhantomData<U>,
 }
 
+impl<U: Fencer, T: Borrow<U>> FencerScore<U, T> {
+    pub fn new(fencer: T, score: u8, cards: Cards) -> FencerScore<U, T> {
+        FencerScore {
+            fencer,
+            score,
+            cards,
+            _p: PhantomData,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Bout<U: Fencer, T: Borrow<U>> {
     fencers: FencerVs<U, T>,
