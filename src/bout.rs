@@ -19,12 +19,43 @@ pub struct FencerScore<U: Fencer, T: Borrow<U>> {
 #[derive(Debug)]
 pub struct Bout<U: Fencer, T: Borrow<U>> {
     fencers: FencerVs<U, T>,
-    scores: Option<(FencerScore<U, T>, FencerScore<U, T>)>,
+    scores: Option<(u8, u8)>,
 }
 
 impl<U: Fencer, T: Borrow<U>> Bout<U, T> {
-    pub fn update_score(&mut self, score_a: FencerScore<U, T>, score_b: FencerScore<U, T>) {
-        self.scores = Some((score_a, score_b));
+    pub fn update_score<S: Borrow<U>>(
+        &mut self,
+        score_a: FencerScore<U, S>,
+        score_b: FencerScore<U, S>,
+    ) -> Result<(), ()> {
+        let pos_a = self.fencers.pos(score_a.fencer.borrow());
+        let pos_b = self.fencers.pos(score_b.fencer.borrow());
+        if pos_a == pos_b {
+            return Err(());
+        }
+
+        let score_0;
+        let score_1;
+
+        match pos_a {
+            TuplePos::First => {
+                score_0 = score_a.score;
+                score_1 = score_b.score
+            }
+            TuplePos::Second => {
+                score_1 = score_a.score;
+                score_0 = score_b.score
+            }
+            TuplePos::None => return Err(()),
+        }
+
+        if pos_b == TuplePos::None {
+            return Err(());
+        }
+
+        self.scores = Some((score_0, score_1));
+
+        Ok(())
     }
 
     pub fn new(fencers: FencerVs<U, T>) -> Self {
@@ -48,6 +79,13 @@ impl fmt::Display for FencerVsError {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum TuplePos {
+    First,
+    Second,
+    None,
+}
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct FencerVs<U: Fencer, T: Borrow<U>>(T, T, PhantomData<U>);
 
@@ -57,6 +95,16 @@ impl<U: Fencer, T: Borrow<U>> FencerVs<U, T> {
             Err(FencerVsError::SameFencer)
         } else {
             Ok(FencerVs(fencer_a, fencer_b, PhantomData))
+        }
+    }
+
+    fn pos(&self, fencer: &U) -> TuplePos {
+        if fencer == self.0.borrow() {
+            TuplePos::First
+        } else if fencer == self.1.borrow() {
+            TuplePos::Second
+        } else {
+            TuplePos::None
         }
     }
 }
