@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
-#[derive(Serialize,Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, Copy)]
 pub struct Cards {
     yellow: u8,
     red: u8,
