@@ -68,11 +68,33 @@ impl<T: Fencer> PoolSheet<T> {
         let fencer_a_fencer = Rc::new(fencer_a.fencer);
         let fencer_b_fencer = Rc::new(fencer_b.fencer);
 
-        let fencer_a = FencerScore::new(fencer_a_fencer.clone(), fencer_a.score, fencer_a.cards);
-        let fencer_b = FencerScore::new(fencer_b_fencer.clone(), fencer_b.score, fencer_b.cards);
+        let fencer_a: FencerScore<T, Rc<T>> =
+            FencerScore::new(fencer_a_fencer.clone(), fencer_a.score, fencer_a.cards);
+        let fencer_b: FencerScore<T, Rc<T>> =
+            FencerScore::new(fencer_b_fencer.clone(), fencer_b.score, fencer_b.cards);
 
-        let x = FencerVs::new(fencer_a_fencer, fencer_b_fencer).unwrap();
-        let bout = self.bouts.get_mut(&x).unwrap();
+        let x = FencerVs::new(fencer_a.fencer, fencer_b.fencer).unwrap();
+        let (_, vs, bout) = self.bouts.get_full_mut(&x).unwrap();
+
+        let fencer_a = FencerScore::new(
+            vs.get_fencer(&fencer_a_fencer).unwrap(),
+            fencer_a.score,
+            fencer_a.cards,
+        );
+
+        let fencer_b = FencerScore::new(
+            vs.get_fencer(&fencer_b_fencer).unwrap(),
+            fencer_b.score,
+            fencer_b.cards,
+        );
+
+        let acs = Rc::strong_count(&fencer_a_fencer);
+        let bcs = Rc::strong_count(&fencer_b_fencer);
+        let acw = Rc::weak_count(&fencer_a_fencer);
+        let bcw = Rc::weak_count(&fencer_b_fencer);
+
+        println!("Counts {}, {}, {}, {}", acs, bcs, acw, bcw);
+
         bout.update_score(fencer_a, fencer_b)
     }
 }
@@ -95,7 +117,7 @@ mod tests {
             SimpleFencer::new("Fencer4"),
         ];
 
-        let mut pool_sheet = PoolSheet::new(fencers.to_vec(), &SimpleBoutsCreator).unwrap();
+        let pool_sheet = PoolSheet::new(fencers.to_vec(), &SimpleBoutsCreator).unwrap();
         for bout in pool_sheet.iter() {
             println!("{bout:#?}");
         }
@@ -117,9 +139,7 @@ mod tests {
 
         let mut pool_sheet = PoolSheet::new(fencers.to_vec(), &SimpleBoutsCreator).unwrap();
 
-        let a_versus = FencerVs::new(json_fencer1.clone(), json_fencer2.clone()).unwrap();
-
-        let smth = pool_sheet.update_score(
+        let _smth = pool_sheet.update_score(
             FencerScore::new(json_fencer1, 0, Cards::default()),
             FencerScore::new(json_fencer2, 0, Cards::default()),
         );
