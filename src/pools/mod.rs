@@ -70,6 +70,9 @@ impl<T: Fencer> PoolSheet<T> {
         // let testa;
         // let testb;
         {
+            // Need to convert fencerscore struct since the index map needs a version using an Rc smart pointer.
+            // I put it in this block so I test and make sure that I dont end up with additional references to the new pointer
+            // by passing it into the bout. These instances should only exist for this function.
             let fencer_a_fencer = Rc::new(fencer_a.fencer.clone());
             let fencer_b_fencer = Rc::new(fencer_b.fencer.clone());
 
@@ -90,6 +93,7 @@ impl<T: Fencer> PoolSheet<T> {
         // let acw = Rc::weak_count(&testa);
         // let bcw = Rc::weak_count(&testb);
 
+        // I only expect 1 strong count for each since.
         // println!("Counts {}, {}, {}, {}", acs, bcs, acw, bcw);
 
         let (_, vs, bout) = buf;
@@ -113,11 +117,7 @@ impl<T: Fencer> PoolSheet<T> {
 #[cfg(test)]
 mod tests {
     use super::{bout_creation::SimpleBoutsCreator, PoolSheet};
-    use crate::{
-        bout::{FencerScore, FencerVs},
-        cards::Cards,
-        fencer::SimpleFencer,
-    };
+    use crate::{bout::FencerScore, cards::Cards, fencer::SimpleFencer};
 
     #[test]
     fn iter_test() {
