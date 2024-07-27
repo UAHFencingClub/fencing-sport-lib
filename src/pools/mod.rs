@@ -20,17 +20,52 @@ pub enum PoolSheetError {
 #[self_referencing]
 #[derive(Debug)]
 pub struct PoolSheet<T: Fencer + 'static> {
-    fencers: Vec<T>,
+    fencers: Box<[T]>,
     #[borrows(fencers)]
     #[covariant]
     bouts: IndexMap<FencerVs<'this, T>, Bout<'this, T>, RandomState>,
 }
 
 impl<T: Fencer + 'static> PoolSheet<T> {
-    pub fn create(fencers: Vec<T>) -> Self {
-        PoolSheet::new(fencers, |_| IndexMap::new())
+    pub fn create<C>(fencers: Vec<T>, creator: &C) -> Result<PoolSheet<T>, BoutCreationError>
+    where
+        C: BoutsCreator<T>,
+    {
+        Ok(PoolSheet::new(fencers.into_boxed_slice(), |fencers| {
+            let mut bouts = IndexMap::new();
+            match creator.get_order(fencers) {
+                Ok(bout_indexes) => {
+                    for pair in bout_indexes.into_iter() {
+                        match FencerVs::new(
+                            fencers.get(pair.0 - 1).unwrap(),
+                            fencers.get(pair.1 - 1).unwrap(),
+                        ) {
+                            Ok(versus) => {
+                                bouts.insert(versus.clone(), Bout::new(versus));
+                            }
+                            Err(err) => {
+                                // return Err(BoutCreationError::VsError(
+                                //     err,
+                                //     "The pool creation paired a fencer with themselves."
+                                //         .to_string(),
+                                // ))
+                                panic!("I should fix this");
+                            }
+                        }
+                    }
+                }
+                Err(err) => {
+                    // return Err(BoutCreationError::PoolOrderError(err));
+                    panic!("I should fix this");
+                }
+            };
+            bouts
+        }))
     }
-    pub fn get_fencers(&self) -> &Vec<T> {
+    // pub fn create(fencers: Vec<T>) -> Self {
+    //     PoolSheet::new(fencers, |_| IndexMap::new())
+    // }
+    pub fn get_fencers(&self) -> &[T] {
         self.borrow_fencers()
     }
 
@@ -60,20 +95,19 @@ impl<T: Fencer + 'static> PoolSheet<T> {
     {
         let x =
             FencerVs::new(fencer_a.fencer, fencer_b.fencer).map_err(|_| PoolSheetError::Err2)?;
-        // let (bout_key, _) = self.borrow_bouts().get_key_value(&x).unwrap();
+        let (bout_key, _) = self.borrow_bouts().get_key_value(&x).unwrap();
         // let test_a = fencer_a.fencer.clone();
         // // let score_a = fencer_a.score;
         // let test_b = fencer_b.fencer.clone();
-        // // let score_b = fencer_b.score;
+        // let score_b = fencer_b.score;
 
         // // let new_score_a = FencerScore::new(&test_a, fencer_a.score);
         // let new_score_b = FencerScore::new(&test_b, fencer_b.score);
         self.with_bouts_mut(|bouts| {
-            unsafe {
-                let bout = bouts.get_mut(&x).ok_or(PoolSheetError::Err1)?;
-                bout.update_score(&fencer_a, &fencer_b)
-                    .map_err(|_| PoolSheetError::Err3)?;
-            }
+            let bout = bouts.get_mut(bout_key).ok_or(PoolSheetError::Err1)?;
+            bout.update_score(&fencer_a, &fencer_b)
+                .map_err(|_| PoolSheetError::Err3)?;
+
             Ok(())
         })?;
         // Err(PoolSheetError::Err1)
