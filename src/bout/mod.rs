@@ -1,13 +1,13 @@
 use std::borrow::Borrow;
 
-use crate::fencer::Fencer;
+use crate::{fencer::Fencer, pools::PoolSheetError};
 
 mod score;
 pub use score::FencerScore;
 
 mod versus;
+pub use versus::FencerVs;
 use versus::TuplePos;
-pub use versus::{FencerVs, FencerVsError};
 
 #[derive(Debug)]
 pub struct Bout<U: Fencer, T: Borrow<U>> {
@@ -20,11 +20,11 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
         &mut self,
         score_a: FencerScore<U, S>,
         score_b: FencerScore<U, S>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), PoolSheetError> {
         let pos_a = self.fencers.pos(score_a.fencer.borrow());
         let pos_b = self.fencers.pos(score_b.fencer.borrow());
         if pos_a == pos_b {
-            return Err(());
+            return Err(PoolSheetError::InvalidBout);
         }
 
         let score_0;
@@ -39,11 +39,11 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
                 score_1 = score_a.score;
                 score_0 = score_b.score
             }
-            TuplePos::None => return Err(()),
+            TuplePos::None => return Err(PoolSheetError::InvalidBout),
         }
 
         if pos_b == TuplePos::None {
-            return Err(());
+            return Err(PoolSheetError::InvalidBout);
         }
 
         self.scores = Some((score_0, score_1));

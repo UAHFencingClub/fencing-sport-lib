@@ -1,24 +1,23 @@
-use std::borrow::Borrow;
-use std::cell::RefCell;
 use std::collections::hash_map::RandomState;
-use std::marker::PhantomData;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
 
-use crate::bout::{Bout, FencerScore, FencerVs, FencerVsError};
-use crate::fencer::{self, Fencer};
-use crate::organizations::usafencing::pool_bout_orders::get_default_order;
+use crate::bout::{Bout, FencerScore, FencerVs};
+use crate::fencer::Fencer;
 use bout_creation::BoutsCreator;
 
 pub mod bout_creation;
 mod pool_error;
 pub use pool_error::PoolSheetError;
 
+type PoolSheetVersus<T> = FencerVs<T, Rc<T>>;
+type PoolSheetBout<T> = Bout<T, Rc<T>>;
+
 #[derive(Debug)]
 pub struct PoolSheet<T: Fencer> {
     fencers: Box<[Rc<T>]>,
-    bouts: IndexMap<FencerVs<T, Rc<T>>, Bout<T, Rc<T>>, RandomState>,
+    bouts: IndexMap<PoolSheetVersus<T>, PoolSheetBout<T>, RandomState>,
 }
 
 impl<T: Fencer> PoolSheet<T> {
@@ -41,8 +40,8 @@ impl<T: Fencer> PoolSheet<T> {
 
         for pair in bout_indexes.into_iter() {
             let versus = FencerVs::new(
-                new_sheet.fencers.get(pair.0 - 1).unwrap().clone(),
-                new_sheet.fencers.get(pair.1 - 1).unwrap().clone(),
+                new_sheet.fencers[pair.0 - 1].clone(),
+                new_sheet.fencers[pair.1 - 1].clone(),
             )
             .expect("Error in bout creator, invalid indexes generated.");
 
@@ -60,7 +59,7 @@ impl<T: Fencer> PoolSheet<T> {
         &mut self,
         fencer_a: FencerScore<T, T>,
         fencer_b: FencerScore<T, T>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), PoolSheetError> {
         // Formatted weirdly to do some tests to make sure the new smart pointer gets dropped.
         let buf;
         // let testa;
@@ -77,8 +76,11 @@ impl<T: Fencer> PoolSheet<T> {
             let fencer_b: FencerScore<T, Rc<T>> =
                 FencerScore::new(fencer_b_fencer.clone(), fencer_b.score, fencer_b.cards);
 
-            let x = FencerVs::new(fencer_a.fencer, fencer_b.fencer).unwrap();
-            buf = self.bouts.get_full_mut(&x).unwrap();
+            let x = FencerVs::new(fencer_a.fencer, fencer_b.fencer)?;
+            buf = self
+                .bouts
+                .get_full_mut(&x)
+                .ok_or(PoolSheetError::NoBoutFound)?;
 
             // testa = fencer_a_fencer;
             // testb = fencer_b_fencer;
@@ -95,13 +97,15 @@ impl<T: Fencer> PoolSheet<T> {
         let (_, vs, bout) = buf;
 
         let fencer_a = FencerScore::new(
-            vs.get_fencer(&fencer_a.fencer).unwrap(),
+            vs.get_fencer(&fencer_a.fencer)
+                .expect("This should have been checked earlier in the function"),
             fencer_a.score,
             fencer_a.cards,
         );
 
         let fencer_b = FencerScore::new(
-            vs.get_fencer(&fencer_b.fencer).unwrap(),
+            vs.get_fencer(&fencer_b.fencer)
+                .expect("This should have been checked earlier in the function"),
             fencer_b.score,
             fencer_b.cards,
         );

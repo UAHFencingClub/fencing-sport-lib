@@ -1,23 +1,9 @@
-use crate::fencer::Fencer;
+use crate::{fencer::Fencer, pools::PoolSheetError};
 use std::{
     borrow::Borrow,
-    fmt::{Display, Formatter, Result as FmtResult},
     hash::{self, Hash},
     marker::PhantomData,
 };
-
-#[derive(Debug, Hash)]
-pub enum FencerVsError {
-    SameFencer,
-}
-
-impl Display for FencerVsError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        match self {
-            FencerVsError::SameFencer => write!(f, "A fencer cannot fence themselves."),
-        }
-    }
-}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub(crate) enum TuplePos {
@@ -30,9 +16,9 @@ pub(crate) enum TuplePos {
 pub struct FencerVs<U: Fencer, T: Borrow<U>>(T, T, PhantomData<U>);
 
 impl<U: Fencer, T: Borrow<U> + Clone> FencerVs<U, T> {
-    pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, FencerVsError> {
+    pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, PoolSheetError> {
         if fencer_a.borrow() == fencer_b.borrow() {
-            Err(FencerVsError::SameFencer)
+            Err(PoolSheetError::InvalidBout)
         } else {
             Ok(FencerVs(fencer_a, fencer_b, PhantomData))
         }
