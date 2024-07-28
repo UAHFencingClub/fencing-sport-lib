@@ -13,7 +13,7 @@ pub(crate) enum TuplePos {
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub struct FencerVs<U: Fencer, T: Borrow<U>>(T, T, PhantomData<U>);
+pub struct FencerVs<U: Fencer, T: Borrow<U>>(pub(crate) T, pub(crate) T, PhantomData<U>);
 
 impl<U: Fencer, T: Borrow<U> + Clone> FencerVs<U, T> {
     pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, PoolSheetError> {

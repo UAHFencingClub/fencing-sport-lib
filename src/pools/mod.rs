@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::rc::Rc;
 
@@ -51,7 +52,18 @@ impl<T: Fencer> PoolSheet<T> {
         Ok(new_sheet)
     }
 
-    pub fn iter(&self) -> indexmap::map::Iter<FencerVs<T, Rc<T>>, Bout<T, Rc<T>>> {
+    pub fn get_fencers(&self) -> Vec<&T> {
+        self.fencers.as_ref().iter().map(|x| x.as_ref()).collect()
+    }
+
+    pub fn get_bout(&self, vs: &FencerVs<T, T>) -> Result<&PoolSheetBout<T>, PoolSheetError> {
+        let a = Rc::new(vs.0.clone());
+        let b = Rc::new(vs.1.clone());
+        let vs = FencerVs::new(a, b).unwrap();
+        self.bouts.get(&vs).ok_or(PoolSheetError::NoBoutFound)
+    }
+
+    pub fn iter_bouts(&self) -> indexmap::map::Iter<FencerVs<T, Rc<T>>, Bout<T, Rc<T>>> {
         self.bouts.iter()
     }
 
@@ -129,7 +141,7 @@ mod tests {
         ];
 
         let pool_sheet = PoolSheet::new(fencers.to_vec(), &SimpleBoutsCreator).unwrap();
-        for bout in pool_sheet.iter() {
+        for bout in pool_sheet.iter_bouts() {
             println!("{bout:#?}");
         }
     }
