@@ -73,7 +73,7 @@ impl Fencer for USAFFencer {
 }
 // Temporary
 impl USAFFencer {
-    fn new(name: String) -> Self {
+    pub fn new(name: String) -> Self {
         USAFFencer {
             name: Name {
                 suffix: None,

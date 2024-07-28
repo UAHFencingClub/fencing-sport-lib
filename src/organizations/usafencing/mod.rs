@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// I don't actually have a good reference other than this: https://cdn1.sportngin.com/attachments/document/0132/5185/USA_Fencing_Classification_Reference_Chart.pdf
 /// Accessed April 17, 2024
 #[derive(Debug)]
-enum Rating {
+pub enum Rating {
     A(usize),
     B(usize),
     C(usize),
