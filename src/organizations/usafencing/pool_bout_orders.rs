@@ -2,6 +2,8 @@
 // https://cdn1.sportngin.com/attachments/document/0034/5494/bout_order.pdf
 // These orders need to be validated
 
+use crate::pools::PoolSheetError;
+
 // Regular Pool Orders
 pub const POOL_OF_4_ORDER: [(usize, usize); 6] = [(1, 4), (2, 3), (1, 3), (2, 4), (3, 4), (1, 2)];
 pub const POOL_OF_5_ORDER: [(usize, usize); 10] = [
@@ -450,13 +452,8 @@ pub const POOL_OF_12_ORDER: [(usize, usize); 66] = [
     (6, 11),
 ];
 
-#[derive(Debug)]
-pub enum PoolOrderError {
-    UnsupportedParticipantCount(String),
-}
-
 // Maybe make a macro to generate this and rename a few things.
-pub fn get_default_order(num_fencers: usize) -> Result<Vec<(usize, usize)>, PoolOrderError> {
+pub fn get_default_order(num_fencers: usize) -> Result<Vec<(usize, usize)>, PoolSheetError> {
     match num_fencers {
         4 => Ok(POOL_OF_4_ORDER.to_vec()),
         5 => Ok(POOL_OF_5_ORDER.to_vec()),
@@ -467,9 +464,7 @@ pub fn get_default_order(num_fencers: usize) -> Result<Vec<(usize, usize)>, Pool
         10 => Ok(POOL_OF_10_ORDER.to_vec()),
         11 => Ok(POOL_OF_11_ORDER.to_vec()),
         12 => Ok(POOL_OF_12_ORDER.to_vec()),
-        _ => Err(PoolOrderError::UnsupportedParticipantCount(
-            "Can not create a bout order for the amount of fencers passed in".to_string(),
-        )),
+        _ => Err(PoolSheetError::UnsupportedParticipantCount),
     }
 }
 

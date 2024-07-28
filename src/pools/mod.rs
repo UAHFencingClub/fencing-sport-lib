@@ -8,10 +8,12 @@ use indexmap::IndexMap;
 
 use crate::bout::{Bout, FencerScore, FencerVs, FencerVsError};
 use crate::fencer::{self, Fencer};
-use crate::organizations::usafencing::pool_bout_orders::{get_default_order, PoolOrderError};
+use crate::organizations::usafencing::pool_bout_orders::get_default_order;
 use bout_creation::{BoutCreationError, BoutsCreator};
 
 pub mod bout_creation;
+mod pool_error;
+pub use pool_error::PoolSheetError;
 
 #[derive(Debug)]
 pub struct PoolSheet<T: Fencer> {
@@ -20,7 +22,7 @@ pub struct PoolSheet<T: Fencer> {
 }
 
 impl<T: Fencer> PoolSheet<T> {
-    pub fn new<C>(fencers: Vec<T>, creator: &C) -> Result<PoolSheet<T>, PoolOrderError>
+    pub fn new<C>(fencers: Vec<T>, creator: &C) -> Result<PoolSheet<T>, PoolSheetError>
     where
         C: BoutsCreator<T>,
     {
@@ -43,12 +45,6 @@ impl<T: Fencer> PoolSheet<T> {
                 new_sheet.fencers.get(pair.1 - 1).unwrap().clone(),
             )
             .expect("Error in bout creator, invalid indexes generated.");
-            // .map_err(|err| {
-            //     BoutCreationError::VsError(
-            //         err,
-            //         "The pool creation paired a fencer with themselves.".to_string(),
-            //     )
-            // })?;
 
             new_sheet.bouts.insert(versus.clone(), Bout::new(versus));
         }
