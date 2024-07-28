@@ -9,7 +9,7 @@ use indexmap::IndexMap;
 use crate::bout::{Bout, FencerScore, FencerVs, FencerVsError};
 use crate::fencer::{self, Fencer};
 use crate::organizations::usafencing::pool_bout_orders::get_default_order;
-use bout_creation::{BoutCreationError, BoutsCreator};
+use bout_creation::BoutsCreator;
 
 pub mod bout_creation;
 mod pool_error;
