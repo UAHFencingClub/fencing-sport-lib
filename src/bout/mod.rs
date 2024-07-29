@@ -51,6 +51,10 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
         Ok(())
     }
 
+    pub fn get_fencers(&self) -> (&U, &U) {
+        (self.fencers.0.borrow(), self.fencers.1.borrow())
+    }
+
     pub fn get_score(&self, fencer: &U) -> Option<u8> {
         match self.fencers.pos(fencer) {
             TuplePos::First => self.scores.map(|x| x.0),
