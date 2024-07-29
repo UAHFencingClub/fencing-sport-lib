@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::rc::Rc;
 
+use indexmap::map::Iter;
 use indexmap::IndexMap;
 
 use crate::bout::{Bout, FencerScore, FencerVs};
@@ -13,7 +14,8 @@ mod pool_error;
 pub use pool_error::PoolSheetError;
 
 type PoolSheetVersus<T> = FencerVs<T, Rc<T>>;
-type PoolSheetBout<T> = Bout<T, Rc<T>>;
+pub type PoolSheetBout<T> = Bout<T, Rc<T>>;
+pub type PoolBoutIter<'a, T> = Iter<'a, FencerVs<T, Rc<T>>, Bout<T, Rc<T>>>;
 
 #[derive(Debug)]
 pub struct PoolSheet<T: Fencer> {
