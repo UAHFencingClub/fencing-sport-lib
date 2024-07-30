@@ -58,9 +58,12 @@ impl<T: Fencer> PoolSheet<T> {
         self.fencers.as_ref().iter().map(|x| x.as_ref()).collect()
     }
 
-    pub fn get_bout(&self, vs: &FencerVs<T, T>) -> Result<&PoolSheetBout<T>, PoolSheetError> {
-        let a = Rc::new(vs.0.clone());
-        let b = Rc::new(vs.1.clone());
+    pub fn get_bout<U: Borrow<T> + Clone + Eq>(
+        &self,
+        vs: &FencerVs<T, U>,
+    ) -> Result<&PoolSheetBout<T>, PoolSheetError> {
+        let a = Rc::new(vs.0.borrow().clone());
+        let b = Rc::new(vs.1.borrow().clone());
         let vs = FencerVs::new(a, b).unwrap();
         self.bouts.get(&vs).ok_or(PoolSheetError::NoBoutFound)
     }
