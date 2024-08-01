@@ -10,7 +10,7 @@ pub use versus::FencerVs;
 use versus::TuplePos;
 
 #[derive(Debug)]
-pub struct Bout<U: Fencer, T: Borrow<U>> {
+pub struct Bout<U: Fencer, T: Borrow<U> + Clone> {
     fencers: FencerVs<U, T>,
     scores: Option<(u8, u8)>,
 }
