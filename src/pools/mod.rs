@@ -13,7 +13,8 @@ pub mod bout_creation;
 mod pool_error;
 pub use pool_error::PoolSheetError;
 
-type PoolSheetVersus<T> = FencerVs<T, Rc<T>>;
+pub type PoolSheetFencerScore<T> = FencerScore<T, Rc<T>>;
+pub type PoolSheetVersus<T> = FencerVs<T, Rc<T>>;
 pub type PoolSheetBout<T> = Bout<T, Rc<T>>;
 pub type PoolBoutIter<'a, T> = Iter<'a, FencerVs<T, Rc<T>>, Bout<T, Rc<T>>>;
 
@@ -72,10 +73,10 @@ impl<T: Fencer> PoolSheet<T> {
         self.bouts.iter()
     }
 
-    pub fn update_score(
+    pub fn update_score<U: Borrow<T> + Clone + Eq>(
         &mut self,
-        fencer_a: FencerScore<T, T>,
-        fencer_b: FencerScore<T, T>,
+        fencer_a: FencerScore<T, U>,
+        fencer_b: FencerScore<T, U>,
     ) -> Result<(), PoolSheetError> {
         // Formatted weirdly to do some tests to make sure the new smart pointer gets dropped.
         let buf;
@@ -85,8 +86,8 @@ impl<T: Fencer> PoolSheet<T> {
             // Need to convert fencerscore struct since the index map needs a version using an Rc smart pointer.
             // I put it in this block so I test and make sure that I dont end up with additional references to the new pointer
             // by passing it into the bout. These instances should only exist for this function.
-            let fencer_a_fencer = Rc::new(fencer_a.fencer.clone());
-            let fencer_b_fencer = Rc::new(fencer_b.fencer.clone());
+            let fencer_a_fencer = Rc::new(fencer_a.fencer.borrow().clone());
+            let fencer_b_fencer = Rc::new(fencer_b.fencer.borrow().clone());
 
             let fencer_a: FencerScore<T, Rc<T>> =
                 FencerScore::new(fencer_a_fencer.clone(), fencer_a.score, fencer_a.cards);

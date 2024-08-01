@@ -24,8 +24,8 @@ impl<U: Fencer, T: Borrow<U> + Clone> FencerVs<U, T> {
         }
     }
 
-    pub fn get_fencer(&self, fencer: &U) -> Option<T> {
-        match self.pos(fencer) {
+    pub fn get_fencer<A: Borrow<U>>(&self, fencer: &A) -> Option<T> {
+        match self.pos(fencer.borrow()) {
             TuplePos::First => Some(self.0.clone()),
             TuplePos::Second => Some(self.1.clone()),
             TuplePos::None => None,
