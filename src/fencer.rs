@@ -1,16 +1,14 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, hash::Hash};
 
-pub trait Fencer: Hash + Serialize + Eq + PartialEq + PartialOrd + Ord + Clone{
+pub trait Fencer: Hash + Serialize + Eq + PartialEq + PartialOrd + Ord + Clone {
     fn get_fullname(&self) -> String;
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SimpleFencer {
     name: String,
-    clubs: Vec<Club>
+    clubs: Vec<Club>,
 }
 
 impl Fencer for SimpleFencer {
@@ -19,11 +17,11 @@ impl Fencer for SimpleFencer {
     }
 }
 
-impl SimpleFencer{
+impl SimpleFencer {
     pub fn new(name: impl ToString) -> Self {
         SimpleFencer {
             name: name.to_string(),
-            clubs: Vec::new()
+            clubs: Vec::new(),
         }
     }
 }
@@ -53,11 +51,7 @@ impl Ord for SimpleFencer {
     }
 }
 
-#[derive(Debug)]
-#[derive(Hash)]
-#[derive(PartialEq, Eq)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Serialize, Deserialize, Clone)]
 struct Club {
     full_name: String,
     shortname: String,

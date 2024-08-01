@@ -1,14 +1,14 @@
-pub mod pool_bout_orders;
-pub mod fencer;
 pub mod club;
-use serde::{Serialize, Deserialize};
+pub mod fencer;
+pub mod pool_bout_orders;
 use email_address::EmailAddress;
 use phonenumber::PhoneNumber;
+use serde::{Deserialize, Serialize};
 
 /// I don't actually have a good reference other than this: https://cdn1.sportngin.com/attachments/document/0132/5185/USA_Fencing_Classification_Reference_Chart.pdf
 /// Accessed April 17, 2024
 #[derive(Debug)]
-enum Rating {
+pub enum Rating {
     A(usize),
     B(usize),
     C(usize),
@@ -17,9 +17,7 @@ enum Rating {
     NoRating,
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct ContactInfo {
     email: Option<EmailAddress>,
     phone_number: Option<PhoneNumber>,
@@ -27,9 +25,7 @@ struct ContactInfo {
 
 /// USA Fencing regions pulled from https://www.usafencing.org/regional-info
 /// Accessed April 17, 2024
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 enum ClubRegion {
     Region1,
     Region2,
@@ -42,9 +38,7 @@ enum ClubRegion {
 /// USA Fencing Division List: https://www.usafencing.org/page/show/2520204-division-information-for-members
 /// Access April 17, 2024
 // Written by passing the USA Fencing division list into chatgpt
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 enum Division {
     Alabama,
     Alaska,
@@ -116,9 +110,7 @@ enum Division {
     Unclaimed,
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 // Written by generative AI
 enum USState {
     AL, // Alabama

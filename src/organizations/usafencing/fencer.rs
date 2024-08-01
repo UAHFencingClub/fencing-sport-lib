@@ -1,25 +1,21 @@
-use serde::{Serialize, Deserialize};
-use time::Date;
-use core::fmt;
-use std::{cmp::Ordering, hash::{Hash, Hasher}, fmt::Display};
-use crate::organizations::usafencing::club::Club;
 use crate::fencer::Fencer;
+use crate::organizations::usafencing::club::Club;
+use core::fmt;
+use serde::{Deserialize, Serialize};
+use std::{
+    cmp::Ordering,
+    fmt::Display,
+    hash::{Hash, Hasher},
+};
+use time::Date;
 
-#[derive(Debug)]
-#[derive(Hash)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Hash, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Suffix {
     Todo1,
     Todo2,
 }
 
-#[derive(Debug)]
-#[derive(Hash)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Clone)]
 struct Name {
     suffix: Option<Suffix>,
     first_name: String,
@@ -38,13 +34,15 @@ impl Display for Name {
             Some(nickname) => format!("({nickname})"),
             None => "".to_string(),
         };
-        write!(f, "{}, {} {} {}", self.last_name, self.first_name, nickname, middle_initial)
+        write!(
+            f,
+            "{}, {} {} {}",
+            self.last_name, self.first_name, nickname, middle_initial
+        )
     }
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 enum GenderIdentity {
     Man,
     Woman,
@@ -53,17 +51,13 @@ enum GenderIdentity {
     FemaleToMale,
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 enum Hand {
     Left,
     Right,
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct USAFFencer {
     name: Name,
     clubs: Vec<Club>,
@@ -79,9 +73,15 @@ impl Fencer for USAFFencer {
 }
 // Temporary
 impl USAFFencer {
-    fn new(name: String) -> Self {
+    pub fn new(name: String) -> Self {
         USAFFencer {
-            name: Name { suffix: None, first_name: name, last_name: String::from(""), middle_initial: None, nickname: None },
+            name: Name {
+                suffix: None,
+                first_name: name,
+                last_name: String::from(""),
+                middle_initial: None,
+                nickname: None,
+            },
             clubs: Vec::new(),
             date_of_birth: None,
             gender_identity: None,

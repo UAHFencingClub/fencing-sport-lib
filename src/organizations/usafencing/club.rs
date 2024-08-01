@@ -1,9 +1,7 @@
-use serde::{Serialize, Deserialize};
-use crate::organizations::usafencing::{USState, ContactInfo, ClubRegion, Division};
+use crate::organizations::usafencing::{ClubRegion, ContactInfo, Division, USState};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Club {
     name: String,
     shortname: String,
