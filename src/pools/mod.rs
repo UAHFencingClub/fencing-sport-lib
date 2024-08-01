@@ -174,4 +174,9 @@ mod tests {
         );
         println!("\nSingle Bout: {pool_sheet:#?}");
     }
+
+    fn update_score_unordered() {
+        // Make sure that the order of inputting scores does not matter.
+        todo!();
+    }
 }
