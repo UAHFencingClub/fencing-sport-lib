@@ -1,4 +1,4 @@
-use indexmap::IndexMap;
+use indexmap::{map::Iter, IndexMap};
 
 use crate::fencer::Fencer;
 use std::{cmp::Ordering, rc::Rc};
@@ -6,12 +6,12 @@ use std::{cmp::Ordering, rc::Rc};
 use super::PoolSheet;
 
 #[derive(Debug, Clone)]
-struct FencerResult<T: Fencer> {
+pub struct FencerResult<T: Fencer> {
     fencer: Rc<T>,
     victories: u8,
     touches_scored: u8,
     touches_recieved: u8,
-    indicator: u8,
+    indicator: i16,
     place: u8,
 }
 
@@ -27,7 +27,7 @@ impl<T: Fencer> FencerResult<T> {
         }
     }
     fn calculate_indicator(&mut self) {
-        self.indicator = self.touches_scored - self.touches_recieved;
+        self.indicator = (self.touches_scored - self.touches_recieved).into();
     }
 }
 
@@ -112,5 +112,9 @@ impl<T: Fencer> PoolResults<T> {
 
         results_map.sort_by(|_, a, _, b| a.cmp(b));
         PoolResults(results_map)
+    }
+
+    pub fn iter(&self) -> Iter<Rc<T>, FencerResult<T>> {
+        self.0.iter()
     }
 }

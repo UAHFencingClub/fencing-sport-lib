@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use indexmap::map::Iter;
 use indexmap::IndexMap;
-use result::PoolResults;
+pub use result::PoolResults;
 
 use crate::bout::{Bout, FencerScore, FencerVs};
 use crate::fencer::Fencer;
@@ -21,7 +21,7 @@ pub type PoolSheetVersus<T> = FencerVs<T, Rc<T>>;
 pub type PoolSheetBout<T> = Bout<T, Rc<T>>;
 pub type PoolBoutIter<'a, T> = Iter<'a, FencerVs<T, Rc<T>>, Bout<T, Rc<T>>>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PoolSheet<T: Fencer> {
     fencers: Box<[Rc<T>]>,
     bouts: IndexMap<PoolSheetVersus<T>, PoolSheetBout<T>, RandomState>,
