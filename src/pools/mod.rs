@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use indexmap::map::Iter;
 use indexmap::IndexMap;
+use result::PoolResults;
 
 use crate::bout::{Bout, FencerScore, FencerVs};
 use crate::fencer::Fencer;
@@ -12,6 +13,7 @@ use bout_creation::BoutsCreator;
 pub mod bout_creation;
 mod pool_error;
 pub use pool_error::PoolSheetError;
+pub mod result;
 
 pub type PoolSheetFencerScore<T> = FencerScore<T, Rc<T>>;
 pub type PoolSheetVersus<T> = FencerVs<T, Rc<T>>;
@@ -130,6 +132,18 @@ impl<T: Fencer> PoolSheet<T> {
 
         bout.update_score(fencer_a, fencer_b)
     }
+
+    pub fn is_finished(&self) -> bool {
+        todo!()
+    }
+
+    pub fn finish(&self) -> Result<PoolResults<T>, PoolSheetError> {
+        if self.is_finished() {
+            Ok(PoolResults::new(self))
+        } else {
+            Err(PoolSheetError::PoolNotComplete)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -175,6 +189,7 @@ mod tests {
         println!("\nSingle Bout: {pool_sheet:#?}");
     }
 
+    #[test]
     fn update_score_unordered() {
         // Make sure that the order of inputting scores does not matter.
         todo!();

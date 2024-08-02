@@ -3,4 +3,5 @@ pub enum PoolSheetError {
     UnsupportedParticipantCount,
     InvalidBout,
     NoBoutFound,
+    PoolNotComplete,
 }

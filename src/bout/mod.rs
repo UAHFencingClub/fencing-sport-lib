@@ -11,8 +11,8 @@ use versus::TuplePos;
 
 #[derive(Debug)]
 pub struct Bout<U: Fencer, T: Borrow<U> + Clone> {
-    fencers: FencerVs<U, T>,
-    scores: Option<(u8, u8)>,
+    pub(crate) fencers: FencerVs<U, T>,
+    pub(crate) scores: Option<(u8, u8)>,
 }
 
 impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
