@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
+use std::marker::PhantomData;
 use std::rc::Rc;
 
 use indexmap::map::Iter;
@@ -130,11 +131,20 @@ impl<T: Fencer> PoolSheet<T> {
             fencer_b.cards,
         );
 
-        bout.update_score(fencer_a, fencer_b)
+        bout.update_score(
+            fencer_a,
+            fencer_b,
+            crate::bout::BoutWinner::Auto(PhantomData),
+        )
     }
 
     pub fn is_finished(&self) -> bool {
-        todo!()
+        for (_, bout) in self.bouts.iter() {
+            if bout.winner.is_none() {
+                return false;
+            }
+        }
+        true
     }
 
     pub fn finish(&self) -> Result<PoolResults<T>, PoolSheetError> {

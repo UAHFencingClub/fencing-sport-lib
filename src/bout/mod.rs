@@ -4,6 +4,8 @@ use crate::{fencer::Fencer, pools::PoolSheetError};
 
 mod score;
 pub use score::FencerScore;
+mod winner;
+pub use winner::BoutWinner;
 
 mod versus;
 pub use versus::FencerVs;
@@ -13,6 +15,7 @@ use versus::TuplePos;
 pub struct Bout<U: Fencer, T: Borrow<U> + Clone> {
     pub(crate) fencers: FencerVs<U, T>,
     pub(crate) scores: Option<(u8, u8)>,
+    pub(crate) winner: Option<T>,
 }
 
 impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
@@ -20,6 +23,7 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
         &mut self,
         score_a: FencerScore<U, S>,
         score_b: FencerScore<U, S>,
+        winner: BoutWinner<U, S>,
     ) -> Result<(), PoolSheetError> {
         let pos_a = self.fencers.pos(score_a.fencer.borrow());
         let pos_b = self.fencers.pos(score_b.fencer.borrow());
@@ -48,6 +52,19 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
 
         self.scores = Some((score_0, score_1));
 
+        match winner {
+            BoutWinner::Auto(_) => {
+                if score_0 > score_1 {
+                    self.winner = Some(self.fencers.0.clone())
+                } else if score_1 > score_0 {
+                    self.winner = Some(self.fencers.1.clone())
+                } else {
+                    return Err(PoolSheetError::UnableToCompleteBout_REEVALUATE);
+                }
+            }
+            BoutWinner::Manual(winner) => todo!(),
+        }
+
         Ok(())
     }
 
@@ -71,6 +88,7 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
         Bout {
             fencers,
             scores: None,
+            winner: None,
         }
     }
 }
