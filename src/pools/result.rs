@@ -27,7 +27,7 @@ impl<T: Fencer> FencerResult<T> {
         }
     }
     fn calculate_indicator(&mut self) {
-        self.indicator = (self.touches_scored - self.touches_recieved).into();
+        self.indicator = i16::from(self.touches_scored) - i16::from(self.touches_recieved);
     }
 }
 
