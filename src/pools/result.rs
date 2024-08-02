@@ -110,7 +110,7 @@ impl<T: Fencer> PoolResults<T> {
             fencer_result.calculate_indicator();
         }
 
-        results_map.sort_by(|_, a, _, b| a.cmp(b));
+        results_map.sort_by(|_, a, _, b| b.cmp(a));
         PoolResults(results_map)
     }
 
