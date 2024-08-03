@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, cmp::Ordering};
 
 use crate::{fencer::Fencer, pools::PoolSheetError};
 
@@ -53,15 +53,11 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
         self.scores = Some((score_0, score_1));
 
         match winner {
-            BoutWinner::Auto(_) => {
-                if score_0 > score_1 {
-                    self.winner = Some(self.fencers.0.clone())
-                } else if score_1 > score_0 {
-                    self.winner = Some(self.fencers.1.clone())
-                } else {
-                    return Err(PoolSheetError::UnableToCompleteBout_REEVALUATE);
-                }
-            }
+            BoutWinner::Auto(_) => match score_0.cmp(&score_1) {
+                Ordering::Greater => self.winner = Some(self.fencers.0.clone()),
+                Ordering::Less => self.winner = Some(self.fencers.1.clone()),
+                Ordering::Equal => return Err(PoolSheetError::UnableToCompleteBout_REEVALUATE),
+            },
             BoutWinner::Manual(winner) => todo!(),
         }
 
