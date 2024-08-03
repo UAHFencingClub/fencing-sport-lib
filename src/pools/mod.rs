@@ -114,6 +114,27 @@ impl<T: Fencer> PoolSheet<T> {
         )
     }
 
+    pub fn unset_score<U: Borrow<T> + Clone + Eq>(
+        &mut self,
+        fencer_a: FencerScore<T, U>,
+        fencer_b: FencerScore<T, U>,
+    ) -> Result<(), PoolSheetError> {
+        // Need to convert fencerscore struct since the index map needs a version using an Rc smart pointer.
+        // This does mean calling this function requires 2 heap allocations every time it is used
+        // I did do some earlier testing in previous commits to make sure that the data is dropped after this function call
+        let fencer_a_fencer = Rc::new(fencer_a.fencer.borrow().clone());
+        let fencer_b_fencer = Rc::new(fencer_b.fencer.borrow().clone());
+
+        let x = FencerVs::new(fencer_a_fencer, fencer_b_fencer)?;
+        let (_, _, bout) = self
+            .bouts
+            .get_full_mut(&x)
+            .ok_or(PoolSheetError::NoBoutFound)?;
+
+        bout.unset_scores();
+        Ok(())
+    }
+
     pub fn is_finished(&self) -> bool {
         for (_, bout) in self.bouts.iter() {
             if bout.winner.is_none() {

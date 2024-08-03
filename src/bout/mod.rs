@@ -86,6 +86,10 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
         }
     }
 
+    pub fn unset_scores(&mut self) {
+        self.scores = None;
+    }
+
     pub fn new(fencers: FencerVs<U, T>) -> Self {
         Bout {
             fencers,
