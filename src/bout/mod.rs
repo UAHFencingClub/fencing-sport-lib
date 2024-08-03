@@ -58,7 +58,13 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
                 Ordering::Less => self.winner = Some(self.fencers.1.clone()),
                 Ordering::Equal => return Err(PoolSheetError::UnableToCompleteBout_REEVALUATE),
             },
-            BoutWinner::Manual(winner) => todo!(),
+            BoutWinner::Manual(winner) => match self.fencers.pos(winner.borrow()) {
+                TuplePos::First => self.winner = Some(self.fencers.0.clone()),
+                TuplePos::Second => self.winner = Some(self.fencers.1.clone()),
+                TuplePos::None => {
+                    return Err(PoolSheetError::InvalidBout);
+                }
+            },
         }
 
         Ok(())
