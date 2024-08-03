@@ -61,7 +61,7 @@ pub struct PoolResults<T: Fencer>(IndexMap<Rc<T>, FencerResult<T>>);
 impl<T: Fencer> PoolResults<T> {
     pub fn new(poolsheet: &PoolSheet<T>) -> PoolResults<T> {
         let mut results_map = IndexMap::new();
-        for fencer in poolsheet.fencers.into_iter() {
+        for fencer in poolsheet.fencers.iter() {
             results_map.insert(fencer.clone(), FencerResult::new_zeroed(fencer.clone()));
         }
 
@@ -71,13 +71,10 @@ impl<T: Fencer> PoolResults<T> {
                 .get_scores()
                 .expect("Bout Should have been checked for completion");
 
-            let bout_winner = if score_a > score_b {
-                fencer_a
-            } else if score_b > score_a {
-                fencer_b
-            } else {
-                todo!("I totally forgot to implement that functionality (bout won by priority)")
-            };
+            let bout_winner = bout
+                .winner
+                .as_ref()
+                .expect("Winner should be set before a call to make results is done");
 
             {
                 let fencer_a_result = results_map
