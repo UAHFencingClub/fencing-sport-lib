@@ -43,17 +43,15 @@ impl<T: Fencer> Eq for FencerResult<T> {}
 
 impl<T: Fencer> PartialOrd for FencerResult<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(
-            self.victories
-                .cmp(&other.victories)
-                .then_with(|| self.indicator.cmp(&other.indicator)),
-        )
+        Some(self.cmp(other))
     }
 }
 
 impl<T: Fencer> Ord for FencerResult<T> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        self.victories
+            .cmp(&other.victories)
+            .then_with(|| self.indicator.cmp(&other.indicator))
     }
 }
 
