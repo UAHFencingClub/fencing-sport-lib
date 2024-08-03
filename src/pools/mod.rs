@@ -81,41 +81,17 @@ impl<T: Fencer> PoolSheet<T> {
         fencer_a: FencerScore<T, U>,
         fencer_b: FencerScore<T, U>,
     ) -> Result<(), PoolSheetError> {
-        // Formatted weirdly to do some tests to make sure the new smart pointer gets dropped.
-        let buf;
-        // let testa;
-        // let testb;
-        {
-            // Need to convert fencerscore struct since the index map needs a version using an Rc smart pointer.
-            // I put it in this block so I test and make sure that I dont end up with additional references to the new pointer
-            // by passing it into the bout. These instances should only exist for this function.
-            let fencer_a_fencer = Rc::new(fencer_a.fencer.borrow().clone());
-            let fencer_b_fencer = Rc::new(fencer_b.fencer.borrow().clone());
+        // Need to convert fencerscore struct since the index map needs a version using an Rc smart pointer.
+        // This does mean calling this function requires 2 heap allocations every time it is used
+        // I did do some earlier testing in previous commits to make sure that the data is dropped after this function call
+        let fencer_a_fencer = Rc::new(fencer_a.fencer.borrow().clone());
+        let fencer_b_fencer = Rc::new(fencer_b.fencer.borrow().clone());
 
-            let fencer_a: FencerScore<T, Rc<T>> =
-                FencerScore::new(fencer_a_fencer.clone(), fencer_a.score, fencer_a.cards);
-            let fencer_b: FencerScore<T, Rc<T>> =
-                FencerScore::new(fencer_b_fencer.clone(), fencer_b.score, fencer_b.cards);
-
-            let x = FencerVs::new(fencer_a.fencer, fencer_b.fencer)?;
-            buf = self
-                .bouts
-                .get_full_mut(&x)
-                .ok_or(PoolSheetError::NoBoutFound)?;
-
-            // testa = fencer_a_fencer;
-            // testb = fencer_b_fencer;
-        }
-
-        // let acs = Rc::strong_count(&testa);
-        // let bcs = Rc::strong_count(&testb);
-        // let acw = Rc::weak_count(&testa);
-        // let bcw = Rc::weak_count(&testb);
-
-        // I only expect 1 strong count for each since.
-        // println!("Counts {}, {}, {}, {}", acs, bcs, acw, bcw);
-
-        let (_, vs, bout) = buf;
+        let x = FencerVs::new(fencer_a_fencer, fencer_b_fencer)?;
+        let (_, vs, bout) = self
+            .bouts
+            .get_full_mut(&x)
+            .ok_or(PoolSheetError::NoBoutFound)?;
 
         let fencer_a = FencerScore::new(
             vs.get_fencer(&fencer_a.fencer)
