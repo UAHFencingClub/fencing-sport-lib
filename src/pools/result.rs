@@ -1,3 +1,4 @@
+use derive_getters::Getters;
 use indexmap::{map::Iter, IndexMap};
 
 use crate::fencer::Fencer;
@@ -5,7 +6,7 @@ use std::{cmp::Ordering, rc::Rc};
 
 use super::PoolSheet;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct FencerResult<T: Fencer> {
     fencer: Rc<T>,
     victories: u8,

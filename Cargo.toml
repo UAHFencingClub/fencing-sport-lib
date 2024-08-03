@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+derive-getters = "0.4.0"
 email_address = "0.2.4"
 indexmap = { version = "2.2.6", features = ["std", "serde"] }
 phonenumber = "0.3.4"
