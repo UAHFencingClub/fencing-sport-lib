@@ -42,6 +42,10 @@ impl<U: Fencer, T: Borrow<U> + Clone> FencerVs<U, T> {
         }
     }
 
+    pub fn ref_type(&self) -> FencerVs<U, &U> {
+        FencerVs(self.0.borrow(), self.1.borrow(), PhantomData)
+    }
+
     fn order(&self) -> (&U, &U) {
         let (a, b) = (self.0.borrow(), self.1.borrow());
         if a <= b {
@@ -70,16 +74,17 @@ impl<U: Fencer, T: Borrow<U> + Clone> PartialEq for FencerVs<U, T> {
 
 #[cfg(test)]
 mod tests {
-    use std::hash::{DefaultHasher, Hash, Hasher};
-
-    use crate::fencer::SimpleFencer;
-
     use super::FencerVs;
+    use crate::fencer::SimpleFencer;
+    use std::{
+        hash::{DefaultHasher, Hash, Hasher},
+        rc::Rc,
+    };
 
     #[test]
     fn hash_unordered_test() {
-        let fencer_a = SimpleFencer::new("a");
-        let fencer_b = SimpleFencer::new("b");
+        let fencer_a = SimpleFencer::new("Alice");
+        let fencer_b = SimpleFencer::new("Bob");
 
         let vs_ab: FencerVs<SimpleFencer, &SimpleFencer> =
             FencerVs::new(&fencer_a, &fencer_b).unwrap();
@@ -98,8 +103,8 @@ mod tests {
 
     #[test]
     fn eq_unordered_test() {
-        let fencer_a = SimpleFencer::new("a");
-        let fencer_b = SimpleFencer::new("b");
+        let fencer_a = SimpleFencer::new("Alice");
+        let fencer_b = SimpleFencer::new("Bob");
 
         let vs_ab: FencerVs<SimpleFencer, &SimpleFencer> =
             FencerVs::new(&fencer_a, &fencer_b).unwrap();
@@ -108,5 +113,22 @@ mod tests {
             FencerVs::new(&fencer_b, &fencer_a).unwrap();
 
         assert_eq!(vs_ab, vs_ba);
+    }
+
+    #[test]
+    fn eq_type_test() {
+        let fencer_a_rc = Rc::new(SimpleFencer::new("Alice"));
+        let fencer_b_rc = Rc::new(SimpleFencer::new("Bob"));
+
+        let vs_rc: FencerVs<SimpleFencer, Rc<SimpleFencer>> =
+            FencerVs::new(fencer_a_rc, fencer_b_rc).unwrap();
+
+        let fencer_a_box = Box::new(SimpleFencer::new("Alice"));
+        let fencer_b_box = Box::new(SimpleFencer::new("Bob"));
+
+        let vs_box: FencerVs<SimpleFencer, Box<SimpleFencer>> =
+            FencerVs::new(fencer_a_box, fencer_b_box).unwrap();
+
+        assert_eq!(vs_box.ref_type(), vs_rc.ref_type());
     }
 }
