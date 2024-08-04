@@ -32,10 +32,10 @@ impl<U: Fencer, T: Borrow<U> + Clone> FencerVs<U, T> {
         }
     }
 
-    pub(crate) fn pos(&self, fencer: &U) -> TuplePos {
-        if fencer == self.0.borrow() {
+    pub(crate) fn pos<A: Borrow<U>>(&self, fencer: &A) -> TuplePos {
+        if fencer.borrow() == self.0.borrow() {
             TuplePos::First
-        } else if fencer == self.1.borrow() {
+        } else if fencer.borrow() == self.1.borrow() {
             TuplePos::Second
         } else {
             TuplePos::None
