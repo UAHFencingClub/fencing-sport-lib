@@ -72,6 +72,16 @@ impl<T: Fencer> PoolSheet<T> {
         self.bouts.get(&vs).ok_or(PoolSheetError::NoBoutFound)
     }
 
+    pub fn get_bout_mut<U: Borrow<T> + Clone + Eq>(
+        &mut self,
+        vs: &FencerVs<T, U>,
+    ) -> Result<&mut PoolSheetBout<T>, PoolSheetError> {
+        let a = Rc::new(vs.0.borrow().clone());
+        let b = Rc::new(vs.1.borrow().clone());
+        let vs = FencerVs::new(a, b).unwrap();
+        self.bouts.get_mut(&vs).ok_or(PoolSheetError::NoBoutFound)
+    }
+
     pub fn iter_bouts(&self) -> indexmap::map::Iter<FencerVs<T, Rc<T>>, Bout<T, Rc<T>>> {
         self.bouts.iter()
     }
@@ -107,11 +117,7 @@ impl<T: Fencer> PoolSheet<T> {
             fencer_b.cards,
         );
 
-        bout.update_score(
-            fencer_a,
-            fencer_b,
-            crate::bout::BoutWinner::Auto(PhantomData),
-        )
+        bout.update_scores(fencer_a, fencer_b)
     }
 
     pub fn unset_score<U: Borrow<T> + Clone + Eq>(
@@ -137,7 +143,7 @@ impl<T: Fencer> PoolSheet<T> {
 
     pub fn is_finished(&self) -> bool {
         for (_, bout) in self.bouts.iter() {
-            if bout.winner.is_none() {
+            if bout.get_winner().is_none() {
                 return false;
             }
         }

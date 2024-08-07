@@ -56,6 +56,10 @@ impl<U: Fencer, T: Borrow<U> + Clone> FencerVs<U, T> {
         }
     }
 
+    pub fn get_fencers_owned(&self) -> (T, T) {
+        (self.0.clone(), self.1.clone())
+    }
+
     /// Returns the which position in the tuple struct the fencer is in.
     pub(crate) fn pos<A: Borrow<U>>(&self, fencer: &A) -> TuplePos {
         if fencer.borrow() == self.0.borrow() {
