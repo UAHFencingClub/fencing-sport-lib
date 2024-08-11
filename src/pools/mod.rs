@@ -4,8 +4,9 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 
 use indexmap::map::Iter;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 pub use result::PoolResults;
+use serde::Serialize;
 
 use crate::bout::{Bout, FencerScore, FencerVs};
 use crate::fencer::Fencer;
@@ -28,10 +29,11 @@ pub struct PoolSheet<T: Fencer> {
 }
 
 impl<T: Fencer> PoolSheet<T> {
-    pub fn new<C>(fencers: Vec<T>, creator: &C) -> Result<PoolSheet<T>, PoolSheetError>
+    pub fn new<C>(fencers: IndexSet<T>, creator: &C) -> Result<PoolSheet<T>, PoolSheetError>
     where
         C: BoutsCreator<T>,
     {
+        let fencers: Vec<T> = fencers.into_iter().collect();
         let mut fencers_rced = Vec::with_capacity(fencers.len());
 
         let bout_indexes: Vec<(usize, usize)> = creator.get_order(&fencers)?;
@@ -161,8 +163,23 @@ impl<T: Fencer> PoolSheet<T> {
 
 #[cfg(test)]
 mod tests {
+    use indexmap::IndexSet;
+
     use super::{bout_creation::SimpleBoutsCreator, PoolSheet};
     use crate::{bout::FencerScore, cards::Cards, fencer::SimpleFencer};
+
+    #[test]
+    fn from_vec_test() {
+        let fencers = vec![
+            SimpleFencer::new("Fencer1"),
+            SimpleFencer::new("Fencer2"),
+            SimpleFencer::new("Fencer3"),
+            SimpleFencer::new("Fencer4"),
+        ];
+
+        let _pool_sheet =
+            PoolSheet::new(IndexSet::from_iter(fencers), &SimpleBoutsCreator).unwrap();
+    }
 
     #[test]
     fn iter_test() {
@@ -173,7 +190,7 @@ mod tests {
             SimpleFencer::new("Fencer4"),
         ];
 
-        let pool_sheet = PoolSheet::new(fencers.to_vec(), &SimpleBoutsCreator).unwrap();
+        let pool_sheet = PoolSheet::new(fencers.into(), &SimpleBoutsCreator).unwrap();
         for bout in pool_sheet.iter_bouts() {
             println!("{bout:#?}");
         }
@@ -193,7 +210,7 @@ mod tests {
         let json_fencer2 =
             serde_json::from_str::<SimpleFencer>(r#"{"name":"Fencer2","clubs":[]}"#).unwrap();
 
-        let mut pool_sheet = PoolSheet::new(fencers.to_vec(), &SimpleBoutsCreator).unwrap();
+        let mut pool_sheet = PoolSheet::new(fencers.into(), &SimpleBoutsCreator).unwrap();
 
         let _smth = pool_sheet.update_score(
             FencerScore::new(json_fencer1, 0, Cards::default()),
