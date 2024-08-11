@@ -1,12 +1,15 @@
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
 use std::marker::PhantomData;
+use std::os::linux::raw::stat;
 use std::rc::Rc;
 
 use indexmap::map::Iter;
 use indexmap::{IndexMap, IndexSet};
 pub use result::PoolResults;
-use serde::Serialize;
+use serde::ser::{SerializeStruct, SerializeTupleStruct};
+use serde::{ser::SerializeMap, Serialize, Serializer};
+use serializer_structs::{PoolSheetSpecialBoutsList, PoolSheetSpecialFencers};
 
 use crate::bout::{Bout, FencerScore, FencerVs};
 use crate::fencer::Fencer;
@@ -16,11 +19,13 @@ pub mod bout_creation;
 mod pool_error;
 pub use pool_error::PoolSheetError;
 pub mod result;
+mod serializer_structs;
 
 pub type PoolSheetFencerScore<T> = FencerScore<T, Rc<T>>;
 pub type PoolSheetVersus<T> = FencerVs<T, Rc<T>>;
 pub type PoolSheetBout<T> = Bout<T, Rc<T>>;
 pub type PoolBoutIter<'a, T> = Iter<'a, FencerVs<T, Rc<T>>, Bout<T, Rc<T>>>;
+type PoolSheetMap<T> = IndexMap<PoolSheetVersus<T>, PoolSheetBout<T>, RandomState>;
 
 #[derive(Debug, Clone)]
 pub struct PoolSheet<T: Fencer> {
@@ -161,6 +166,24 @@ impl<T: Fencer> PoolSheet<T> {
     }
 }
 
+impl<T: Fencer + Serialize> Serialize for PoolSheet<T> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("PoolSheet", 2)?;
+        state.serialize_field(
+            "fencers",
+            &PoolSheetSpecialFencers::from(self.fencers.clone()),
+        )?;
+        state.serialize_field(
+            "bouts",
+            &PoolSheetSpecialBoutsList::from(self.bouts.clone()),
+        )?;
+        state.end()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use indexmap::IndexSet;
@@ -217,6 +240,26 @@ mod tests {
             FencerScore::new(json_fencer2, 0, Cards::default()),
         );
         println!("\nSingle Bout: {pool_sheet:#?}");
+    }
+
+    #[test]
+    fn serialize_poolsheet() {
+        let fencers = [
+            SimpleFencer::new("Fencer1"),
+            SimpleFencer::new("Fencer2"),
+            SimpleFencer::new("Fencer3"),
+            SimpleFencer::new("Fencer4"),
+        ];
+        let mut pool_sheet = PoolSheet::new(fencers.clone().into(), &SimpleBoutsCreator).unwrap();
+        pool_sheet
+            .update_score(
+                FencerScore::new(fencers[0].clone(), 3, Cards::default()),
+                FencerScore::new(fencers[1].clone(), 5, Cards::default()),
+            )
+            .unwrap();
+        let json_out = serde_json::to_string_pretty(&pool_sheet).unwrap();
+
+        println!("Json: {json_out}");
     }
 
     #[test]

@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{fencer::Fencer, pools::PoolSheetError};
 use std::{
     borrow::Borrow,
@@ -5,7 +7,7 @@ use std::{
     marker::PhantomData,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub(crate) enum TuplePos {
     First,
     Second,
