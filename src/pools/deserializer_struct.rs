@@ -9,7 +9,7 @@ use serde::{
 use crate::{bout::TuplePos, cards::Cards, fencer::Fencer};
 
 #[derive(Debug, PartialEq)]
-struct Fencers<T: Fencer> {
+pub(super) struct Fencers<T: Fencer> {
     fencers: IndexMap<usize, Rc<T>, RandomState>,
 }
 
@@ -85,7 +85,7 @@ struct OrphanBout {
 }
 
 #[derive(Debug)]
-struct Bouts {
+pub(super) struct Bouts {
     bouts: IndexMap<(usize, usize), OrphanBout>,
 }
 

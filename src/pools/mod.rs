@@ -1,14 +1,15 @@
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
+use std::fmt;
 use std::marker::PhantomData;
-use std::os::linux::raw::stat;
 use std::rc::Rc;
 
 use indexmap::map::Iter;
 use indexmap::{IndexMap, IndexSet};
 pub use result::PoolResults;
-use serde::ser::{SerializeStruct, SerializeTupleStruct};
-use serde::{ser::SerializeMap, Serialize, Serializer};
+use serde::de::{self, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde::ser::{SerializeMap, SerializeStruct, SerializeTupleStruct};
+use serde::{Deserialize, Serialize, Serializer};
 use serializer_structs::{PoolSheetSpecialBoutsList, PoolSheetSpecialFencers};
 
 use crate::bout::{Bout, FencerScore, FencerVs};
@@ -18,6 +19,7 @@ use bout_creation::BoutsCreator;
 pub mod bout_creation;
 mod pool_error;
 pub use pool_error::PoolSheetError;
+mod deserializer_struct;
 pub mod result;
 mod serializer_structs;
 
@@ -184,11 +186,127 @@ impl<T: Fencer + Serialize> Serialize for PoolSheet<T> {
     }
 }
 
+#[derive(Debug)]
+struct DeserPoolSheet<T: Fencer> {
+    fencers: deserializer_struct::Fencers<T>,
+    bouts: deserializer_struct::Bouts,
+}
+
+// Implement Deserialize for DeserPoolSheet
+impl<'de, T> Deserialize<'de> for DeserPoolSheet<T>
+where
+    T: Fencer + Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        enum Field {
+            Fencers,
+            Bouts,
+        }
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`fencers` or `bouts`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "fencers" => Ok(Field::Fencers),
+                            "bouts" => Ok(Field::Bouts),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct MyStructVisitor<T: Fencer> {
+            marker: PhantomData<fn() -> DeserPoolSheet<T>>,
+        }
+
+        impl<'de, T> Visitor<'de> for MyStructVisitor<T>
+        where
+            T: Fencer + Deserialize<'de>,
+        {
+            type Value = DeserPoolSheet<T>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct DeserPoolSheet")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<DeserPoolSheet<T>, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                let fencers = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let bouts = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                Ok(DeserPoolSheet { fencers, bouts })
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<DeserPoolSheet<T>, A::Error>
+            where
+                A: MapAccess<'de>,
+            {
+                let mut fencers = None;
+                let mut bouts = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Fencers => {
+                            if fencers.is_some() {
+                                return Err(de::Error::duplicate_field("fencers"));
+                            }
+                            fencers = Some(map.next_value()?);
+                        }
+                        Field::Bouts => {
+                            if bouts.is_some() {
+                                return Err(de::Error::duplicate_field("bouts"));
+                            }
+                            bouts = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let fencers = fencers.ok_or_else(|| de::Error::missing_field("fencers"))?;
+                let bouts = bouts.ok_or_else(|| de::Error::missing_field("bouts"))?;
+                Ok(DeserPoolSheet { fencers, bouts })
+            }
+        }
+
+        const FIELDS: &[&str] = &["fencers", "bouts"];
+        deserializer.deserialize_struct(
+            "DeserPoolSheet",
+            FIELDS,
+            MyStructVisitor {
+                marker: PhantomData,
+            },
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use indexmap::IndexSet;
 
-    use super::{bout_creation::SimpleBoutsCreator, PoolSheet};
+    use super::{bout_creation::SimpleBoutsCreator, DeserPoolSheet, PoolSheet};
     use crate::{bout::FencerScore, cards::Cards, fencer::SimpleFencer};
 
     #[test]
@@ -267,5 +385,56 @@ mod tests {
     fn update_score_unordered() {
         // Make sure that the order of inputting scores does not matter.
         todo!();
+    }
+
+    #[test]
+    fn deser_poolsheet() {
+        let input = r#"
+            {
+                "fencers": {
+                    "140300542545664": {
+                        "name": "Fencer1",
+                        "clubs": []
+                    },
+                    "140300542545744": {
+                        "name": "Fencer2",
+                        "clubs": []
+                    }
+                },
+                "bouts": {
+                    "[140300542545664,140300542545744]": {
+                        "scores": [
+                            3,
+                            5
+                        ],
+                        "cards": [
+                            {
+                                "yellow": 0,
+                                "red": 0,
+                                "group3red": 0,
+                                "black": 0,
+                                "passivity_yellow": 0,
+                                "passivity_red": 0,
+                                "passivity_black": 0
+                            },
+                            {
+                                "yellow": 0,
+                                "red": 0,
+                                "group3red": 0,
+                                "black": 0,
+                                "passivity_yellow": 0,
+                                "passivity_red": 0,
+                                "passivity_black": 0
+                            }
+                        ],
+                        "priority": "None"
+                    }
+                }
+            }
+        "#;
+
+        let test: DeserPoolSheet<SimpleFencer> = serde_json::from_str(input).unwrap();
+
+        println!("{test:?}")
     }
 }
