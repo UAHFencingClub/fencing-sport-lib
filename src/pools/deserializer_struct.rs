@@ -10,7 +10,7 @@ use crate::{bout::TuplePos, cards::Cards, fencer::Fencer};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Fencers<T: Fencer> {
-    fencers: IndexMap<usize, Rc<T>, RandomState>,
+    pub(super) fencers: IndexMap<usize, Rc<T>, RandomState>,
 }
 
 impl<T: Fencer> Fencers<T> {
@@ -78,15 +78,15 @@ where
 }
 
 #[derive(Debug, Deserialize)]
-struct OrphanBout {
-    scores: (Option<u8>, Option<u8>),
-    cards: (Cards, Cards),
-    priority: TuplePos,
+pub(super) struct OrphanBout {
+    pub(super) scores: (Option<u8>, Option<u8>),
+    pub(super) cards: (Cards, Cards),
+    pub(super) priority: TuplePos,
 }
 
 #[derive(Debug)]
 pub(super) struct Bouts {
-    bouts: IndexMap<(usize, usize), OrphanBout>,
+    pub(super) bouts: IndexMap<(usize, usize), OrphanBout>,
 }
 
 impl Bouts {

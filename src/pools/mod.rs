@@ -29,7 +29,7 @@ pub type PoolSheetBout<T> = Bout<T, Rc<T>>;
 pub type PoolBoutIter<'a, T> = Iter<'a, FencerVs<T, Rc<T>>, Bout<T, Rc<T>>>;
 type PoolSheetMap<T> = IndexMap<PoolSheetVersus<T>, PoolSheetBout<T>, RandomState>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PoolSheet<T: Fencer> {
     fencers: Box<[Rc<T>]>,
     bouts: IndexMap<PoolSheetVersus<T>, PoolSheetBout<T>, RandomState>,
@@ -166,6 +166,13 @@ impl<T: Fencer> PoolSheet<T> {
             Err(PoolSheetError::PoolNotComplete)
         }
     }
+
+    fn _new_empty() -> PoolSheet<T> {
+        PoolSheet {
+            fencers: Box::new([]),
+            bouts: IndexMap::new(),
+        }
+    }
 }
 
 impl<T: Fencer + Serialize> Serialize for PoolSheet<T> {
@@ -183,6 +190,48 @@ impl<T: Fencer + Serialize> Serialize for PoolSheet<T> {
             &PoolSheetSpecialBoutsList::from(self.bouts.clone()),
         )?;
         state.end()
+    }
+}
+
+impl<'de, T: Fencer + Deserialize<'de>> Deserialize<'de> for PoolSheet<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let intermediate_poolsheet = DeserPoolSheet::<T>::deserialize(deserializer)?;
+        let mut fencers = Vec::with_capacity(intermediate_poolsheet.fencers.fencers.len());
+        let mut bouts = PoolSheetMap::with_capacity(intermediate_poolsheet.bouts.bouts.len());
+
+        for (_, fencer) in intermediate_poolsheet.fencers.fencers.iter() {
+            fencers.push(fencer.clone());
+        }
+
+        for (vs, bout) in intermediate_poolsheet.bouts.bouts.iter() {
+            let fencer_a = intermediate_poolsheet
+                .fencers
+                .fencers
+                .get(&vs.0)
+                .ok_or(de::Error::custom("invalid keys in serialized PoolSheet."))?;
+            let fencer_b = intermediate_poolsheet
+                .fencers
+                .fencers
+                .get(&vs.1)
+                .ok_or(de::Error::custom("invalid keys in serialized PoolSheet."))?;
+            let vs: FencerVs<T, Rc<T>> = FencerVs::new(fencer_a.clone(), fencer_b.clone())
+                .map_err(|_| de::Error::custom("invalid keys in serialized PoolSheet."))?;
+            let bout = Bout {
+                fencers: vs.clone(),
+                scores: bout.scores,
+                cards: bout.cards,
+                priority: bout.priority,
+            };
+            bouts.insert(vs, bout);
+        }
+
+        Ok(PoolSheet {
+            fencers: fencers.into(),
+            bouts,
+        })
     }
 }
 
@@ -388,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    fn deser_poolsheet() {
+    fn deserialize_poolsheet_intermediate() {
         let input = r#"
             {
                 "fencers": {
@@ -436,5 +485,27 @@ mod tests {
         let test: DeserPoolSheet<SimpleFencer> = serde_json::from_str(input).unwrap();
 
         println!("{test:?}")
+    }
+
+    #[test]
+    fn deserialize_poolsheet() {
+        let fencers = [
+            SimpleFencer::new("Fencer1"),
+            SimpleFencer::new("Fencer2"),
+            SimpleFencer::new("Fencer3"),
+            SimpleFencer::new("Fencer4"),
+        ];
+        let mut pool_sheet = PoolSheet::new(fencers.clone().into(), &SimpleBoutsCreator).unwrap();
+        pool_sheet
+            .update_score(
+                FencerScore::new(fencers[0].clone(), 3, Cards::default()),
+                FencerScore::new(fencers[1].clone(), 5, Cards::default()),
+            )
+            .unwrap();
+        let json_out = serde_json::to_string_pretty(&pool_sheet).unwrap();
+
+        let new_poolsheet = serde_json::from_str(&json_out).unwrap();
+
+        assert_eq!(pool_sheet, new_poolsheet);
     }
 }
