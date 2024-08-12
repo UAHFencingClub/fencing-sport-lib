@@ -6,7 +6,7 @@ use serde::{
     Deserialize, Deserializer,
 };
 
-use crate::fencer::Fencer;
+use crate::{bout::TuplePos, cards::Cards, fencer::Fencer};
 
 #[derive(Debug, PartialEq)]
 struct Fencers<T: Fencer> {
@@ -77,13 +77,78 @@ where
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct OrphanBout {
+    scores: (Option<u8>, Option<u8>),
+    cards: (Cards, Cards),
+    priority: TuplePos,
+}
+
+#[derive(Debug)]
+struct Bouts {
+    bouts: IndexMap<(usize, usize), OrphanBout>,
+}
+
+impl Bouts {
+    fn new(capacity: usize) -> Self {
+        Bouts {
+            bouts: IndexMap::with_capacity(capacity),
+        }
+    }
+
+    fn insert(&mut self, key: (usize, usize), value: OrphanBout) {
+        self.bouts.insert(key, value);
+    }
+}
+
+impl<'de> Deserialize<'de> for Bouts {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct BoutsVisitor {
+            marker: PhantomData<fn() -> Bouts>,
+        }
+
+        impl BoutsVisitor {
+            fn new() -> Self {
+                BoutsVisitor {
+                    marker: PhantomData,
+                }
+            }
+        }
+
+        impl<'de> Visitor<'de> for BoutsVisitor {
+            type Value = Bouts;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a custom map")
+            }
+
+            fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+            where
+                M: MapAccess<'de>,
+            {
+                let mut map = Bouts::new(access.size_hint().unwrap_or(0));
+                while let Some((key_str, value)) = access.next_entry()? {
+                    let key = serde_json::from_str(key_str).unwrap();
+                    map.insert(key, value);
+                }
+                Ok(map)
+            }
+        }
+
+        deserializer.deserialize_map(BoutsVisitor::new())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::rc::Rc;
 
     use crate::fencer::SimpleFencer;
 
-    use super::Fencers;
+    use super::{Bouts, Fencers};
 
     #[test]
     fn deserialize_fencermap() {
@@ -108,5 +173,70 @@ mod tests {
         let test: Fencers<SimpleFencer> = serde_json::from_str(input).unwrap();
 
         assert_eq!(map, test)
+    }
+
+    #[test]
+    fn deserialize_boutmap() {
+        let input = r#"
+            {
+                "[140300542545664,140300542545904]": {
+                    "scores": [
+                        null,
+                        null
+                    ],
+                    "cards": [
+                        {
+                        "yellow": 0,
+                        "red": 0,
+                        "group3red": 0,
+                        "black": 0,
+                        "passivity_yellow": 0,
+                        "passivity_red": 0,
+                        "passivity_black": 0
+                        },
+                        {
+                        "yellow": 0,
+                        "red": 0,
+                        "group3red": 0,
+                        "black": 0,
+                        "passivity_yellow": 0,
+                        "passivity_red": 0,
+                        "passivity_black": 0
+                        }
+                    ],
+                    "priority": "None"
+                },
+                "[140300542545744,140300542545824]": {
+                    "scores": [
+                        null,
+                        null
+                    ],
+                    "cards": [
+                        {
+                        "yellow": 0,
+                        "red": 0,
+                        "group3red": 0,
+                        "black": 0,
+                        "passivity_yellow": 0,
+                        "passivity_red": 0,
+                        "passivity_black": 0
+                        },
+                        {
+                        "yellow": 0,
+                        "red": 0,
+                        "group3red": 0,
+                        "black": 0,
+                        "passivity_yellow": 0,
+                        "passivity_red": 0,
+                        "passivity_black": 0
+                        }
+                    ],
+                    "priority": "None"
+                }
+        }"#;
+
+        let test: Bouts = serde_json::from_str(input).unwrap();
+
+        println!("{test:?}");
     }
 }

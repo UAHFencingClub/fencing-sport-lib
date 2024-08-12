@@ -9,7 +9,7 @@ pub use winner::BoutWinner;
 
 mod versus;
 pub use versus::FencerVs;
-use versus::TuplePos;
+pub(crate) use versus::TuplePos;
 
 #[derive(Debug, Clone)]
 pub struct Bout<U: Fencer, T: Borrow<U> + Clone> {
