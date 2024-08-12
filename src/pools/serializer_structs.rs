@@ -43,8 +43,7 @@ impl<T: Fencer + Serialize> Serialize for PoolSheetSpecialBout<T> {
     where
         S: Serializer,
     {
-        let mut state = serializer.serialize_struct("PoolBout", 4)?;
-        state.serialize_field("fencers", &PoolSheetSpecialVs::from(self.0.fencers.clone()))?;
+        let mut state = serializer.serialize_struct("PoolBout", 3)?;
         state.serialize_field("scores", &self.0.scores)?;
         state.serialize_field("cards", &self.0.cards)?;
         state.serialize_field("priority", &self.0.priority)?;

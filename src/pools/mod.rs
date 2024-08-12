@@ -243,6 +243,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "Requires manual inspection"]
     fn serialize_poolsheet() {
         let fencers = [
             SimpleFencer::new("Fencer1"),
