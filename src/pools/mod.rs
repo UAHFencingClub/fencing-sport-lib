@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
-use std::fmt;
+use std::fmt::{self, Debug};
 use std::marker::PhantomData;
 use std::rc::Rc;
 
@@ -20,6 +20,8 @@ pub mod bout_creation;
 mod pool_error;
 pub use pool_error::PoolSheetError;
 mod deserializer_struct;
+mod placement;
+pub use placement::Placement;
 pub mod result;
 mod serializer_structs;
 
@@ -35,7 +37,7 @@ pub struct PoolSheet<T: Fencer> {
     bouts: IndexMap<PoolSheetVersus<T>, PoolSheetBout<T>, RandomState>,
 }
 
-impl<T: Fencer> PoolSheet<T> {
+impl<T: Fencer + Debug> PoolSheet<T> {
     pub fn new<C>(fencers: IndexSet<T>, creator: &C) -> Result<PoolSheet<T>, PoolSheetError>
     where
         C: BoutsCreator<T>,

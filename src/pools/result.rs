@@ -1,10 +1,15 @@
 use derive_getters::Getters;
 use indexmap::{map::Iter, IndexMap};
+use iter_tools::Itertools;
 
 use crate::fencer::Fencer;
+use std::fmt::Debug;
 use std::{borrow::Borrow, cmp::Ordering, rc::Rc};
 
+use super::Placement;
 use super::PoolSheet;
+
+use rand::random;
 
 #[derive(Debug, Clone, Getters)]
 pub struct FencerResult<T: Fencer> {
@@ -13,7 +18,7 @@ pub struct FencerResult<T: Fencer> {
     touches_scored: u8,
     touches_recieved: u8,
     indicator: i16,
-    place: u8,
+    place: Placement,
 }
 
 impl<T: Fencer> FencerResult<T> {
@@ -24,11 +29,23 @@ impl<T: Fencer> FencerResult<T> {
             touches_scored: 0,
             touches_recieved: 0,
             indicator: 0,
-            place: 0,
+            place: Placement::Absolute(0),
         }
     }
+
     fn calculate_indicator(&mut self) {
         self.indicator = i16::from(self.touches_scored) - i16::from(self.touches_recieved);
+    }
+
+    /// Compares result, choosing one at random if they are equal.
+    fn rnd_cmp(&self, other: &Self) -> Ordering {
+        self.cmp(other).then_with(|| {
+            if random::<bool>() {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            }
+        })
     }
 }
 
@@ -58,7 +75,7 @@ impl<T: Fencer> Ord for FencerResult<T> {
 #[derive(Debug, Clone)]
 pub struct PoolResults<T: Fencer>(IndexMap<Rc<T>, FencerResult<T>>);
 
-impl<T: Fencer> PoolResults<T> {
+impl<T: Fencer + Debug> PoolResults<T> {
     pub fn new(poolsheet: &PoolSheet<T>) -> PoolResults<T> {
         let mut results_map = IndexMap::new();
         for fencer in poolsheet.fencers.iter() {
@@ -105,7 +122,35 @@ impl<T: Fencer> PoolResults<T> {
             fencer_result.calculate_indicator();
         }
 
-        results_map.sort_by(|_, a, _, b| b.cmp(a));
+        results_map.sort_by(|_, a, _, b| b.rnd_cmp(a));
+
+        let first_result = results_map
+            .get_index_mut(0)
+            .expect("Should have at least one fencer")
+            .1;
+        first_result.place = Placement::Absolute(1);
+
+        let mut results_iter = results_map.iter_mut();
+
+        let (_, mut last_result) = results_iter
+            .next()
+            .expect("Should have at least one fencer");
+        for (_, result) in results_iter {
+            match last_result.cmp(&result) {
+                Ordering::Greater => {
+                    result.place = Placement::Absolute(last_result.place.inner() + 1)
+                }
+                Ordering::Equal => {
+                    last_result.place.to_tied();
+                    result.place = Placement::Tied(last_result.place.inner())
+                }
+                Ordering::Less => {
+                    panic!("The results should have been sorted!")
+                }
+            }
+            last_result = result;
+        }
+
         PoolResults(results_map)
     }
 
