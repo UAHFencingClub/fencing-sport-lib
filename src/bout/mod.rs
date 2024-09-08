@@ -8,8 +8,8 @@ mod winner;
 pub use winner::BoutWinner;
 
 mod versus;
-pub use versus::FencerVs;
 pub(crate) use versus::TuplePos;
+pub use versus::{FencerVs, VersusError};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Bout<U: Fencer, T: Borrow<U> + Clone> {
@@ -49,11 +49,11 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
                 cards_1 = score_a.cards;
                 cards_0 = score_b.cards;
             }
-            TuplePos::None => return Err(PoolSheetError::InvalidBout),
+            TuplePos::None => return Err(PoolSheetError::NoBoutFound),
         }
 
         if pos_b == TuplePos::None {
-            return Err(PoolSheetError::InvalidBout);
+            return Err(PoolSheetError::NoBoutFound);
         }
 
         self.scores = (Some(score_0), Some(score_1));
@@ -78,7 +78,7 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
                 self.scores.1 = Some(fencer_score.score);
                 self.cards.1 = fencer_score.cards;
             }
-            TuplePos::None => return Err(PoolSheetError::InvalidBout),
+            TuplePos::None => return Err(PoolSheetError::NoBoutFound),
         }
         Ok(())
     }
@@ -95,7 +95,7 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
         match self.fencers.pos(fencer.borrow()) {
             TuplePos::First => self.scores.0 = None,
             TuplePos::Second => self.scores.1 = None,
-            TuplePos::None => return Err(PoolSheetError::InvalidBout),
+            TuplePos::None => return Err(PoolSheetError::NoBoutFound),
         }
         Ok(())
     }
@@ -117,7 +117,7 @@ impl<U: Fencer, T: Borrow<U> + Clone> Bout<U, T> {
             Some(fencer) => {
                 let pos = self.fencers.pos(fencer.borrow());
                 if pos == TuplePos::None {
-                    Err(PoolSheetError::InvalidBout)
+                    Err(PoolSheetError::NoBoutFound)
                 } else {
                     self.priority = pos;
                     Ok(())

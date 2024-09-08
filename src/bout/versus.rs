@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{fencer::Fencer, pools::PoolSheetError};
+use crate::fencer::Fencer;
 use std::{
     borrow::Borrow,
+    error::Error,
+    fmt::Display,
     hash::{self, Hash},
     marker::PhantomData,
 };
@@ -13,6 +15,19 @@ pub(crate) enum TuplePos {
     Second,
     None,
 }
+
+#[derive(Debug, Clone, Copy)]
+pub enum VersusError {
+    SameFencer,
+}
+
+impl Display for VersusError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "fencer cannot be matched against themselves")
+    }
+}
+
+impl Error for VersusError {}
 
 /// This struct holds 2 fencers that will be competing against each other in a bout.
 /// It is defined to enforce that the fencers passed in are not the same.
@@ -40,9 +55,9 @@ impl<U: Fencer, T: Borrow<U> + Clone> FencerVs<U, T> {
     /// Initializes a new instance of FencerVs
     /// Errors if `fencer_a  == fencer_b`
     /// Type will need to be specified due to the way I have done the generics.
-    pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, PoolSheetError> {
+    pub fn new(fencer_a: T, fencer_b: T) -> Result<Self, VersusError> {
         if fencer_a.borrow() == fencer_b.borrow() {
-            Err(PoolSheetError::InvalidBout)
+            Err(VersusError::SameFencer)
         } else {
             Ok(FencerVs(fencer_a, fencer_b, PhantomData))
         }

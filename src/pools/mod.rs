@@ -8,7 +8,7 @@ use indexmap::map::Iter;
 use indexmap::{IndexMap, IndexSet};
 pub use result::PoolResults;
 use serde::de::{self, Deserializer, MapAccess, SeqAccess, Visitor};
-use serde::ser::{SerializeMap, SerializeStruct, SerializeTupleStruct};
+use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
 use serializer_structs::{PoolSheetSpecialBoutsList, PoolSheetSpecialFencers};
 

@@ -1,6 +1,5 @@
 use derive_getters::Getters;
 use indexmap::{map::Iter, IndexMap};
-use iter_tools::Itertools;
 
 use crate::fencer::Fencer;
 use std::fmt::Debug;
@@ -100,7 +99,7 @@ impl<T: Fencer + Debug> PoolResults<T> {
                 fencer_a_result.touches_scored += score_a;
                 fencer_a_result.touches_recieved += score_b;
 
-                if <Rc<T> as Borrow<T>>::borrow(&(*fencer_a)) == bout_winner {
+                if <Rc<T> as Borrow<T>>::borrow(fencer_a) == bout_winner {
                     fencer_a_result.victories += 1
                 }
             }
@@ -112,7 +111,7 @@ impl<T: Fencer + Debug> PoolResults<T> {
                 fencer_b_result.touches_scored += score_b;
                 fencer_b_result.touches_recieved += score_a;
 
-                if <Rc<T> as Borrow<T>>::borrow(&(*fencer_b)) == bout_winner {
+                if <Rc<T> as Borrow<T>>::borrow(fencer_b) == bout_winner {
                     fencer_b_result.victories += 1
                 }
             }
