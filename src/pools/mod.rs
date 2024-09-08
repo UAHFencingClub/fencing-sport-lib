@@ -433,9 +433,29 @@ mod tests {
     }
 
     #[test]
+    /// Make sure that the order of FencerScores input to the update_score() function does not matter.
     fn update_score_unordered() {
-        // Make sure that the order of inputting scores does not matter.
-        todo!();
+        let fencers = [
+            SimpleFencer::new("Fencer1"),
+            SimpleFencer::new("Fencer2"),
+            SimpleFencer::new("Fencer3"),
+            SimpleFencer::new("Fencer4"),
+        ];
+
+        let fencer_1_score = FencerScore::new(fencers[0].clone(), 3, Cards::default());
+        let fencer_2_score = FencerScore::new(fencers[1].clone(), 5, Cards::default());
+
+        let mut pool_sheet_a = PoolSheet::new(fencers.clone().into(), &SimpleBoutsCreator).unwrap();
+        pool_sheet_a
+            .update_score(fencer_1_score.clone(), fencer_2_score.clone())
+            .unwrap();
+
+        let mut pool_sheet_b = PoolSheet::new(fencers.clone().into(), &SimpleBoutsCreator).unwrap();
+        pool_sheet_b
+            .update_score(fencer_2_score.clone(), fencer_1_score.clone())
+            .unwrap();
+
+        assert_eq!(pool_sheet_a, pool_sheet_b)
     }
 
     #[test]

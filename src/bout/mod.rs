@@ -165,6 +165,8 @@ mod tests {
 
     use super::{Bout, FencerVs};
 
+    const EXPECTED_BOUT: &str = r#"Bout { fencers: FencerVs(SimpleFencer { name: "Alice", clubs: [] }, SimpleFencer { name: "Bob", clubs: [] }, PhantomData<fencing_sport_lib::fencer::SimpleFencer>), scores: (None, None), cards: (Cards { yellow: 0, red: 0, group3red: 0, black: 0, passivity_yellow: 0, passivity_red: 0, passivity_black: 0 }, Cards { yellow: 0, red: 0, group3red: 0, black: 0, passivity_yellow: 0, passivity_red: 0, passivity_black: 0 }), priority: None }"#;
+
     #[test]
     fn bout_owned_test() {
         let fencer_a = SimpleFencer::new("Alice");
@@ -174,10 +176,7 @@ mod tests {
             FencerVs::new(fencer_a, fencer_b).unwrap();
         let bout = Bout::new(versus);
 
-        assert_eq!(
-            format!("{bout:?}"),
-            r#"Bout { fencers: FencerVs(SimpleFencer { name: "Alice", clubs: [] }, SimpleFencer { name: "Bob", clubs: [] }, PhantomData<fencing_sport_lib::fencer::SimpleFencer>), scores: None }"#
-        );
+        assert_eq!(format!("{bout:?}"), EXPECTED_BOUT);
     }
 
     #[test]
@@ -189,10 +188,7 @@ mod tests {
             FencerVs::new(fencer_a, fencer_b).unwrap();
         let bout = Bout::new(versus);
 
-        assert_eq!(
-            format!("{bout:?}"),
-            r#"Bout { fencers: FencerVs(SimpleFencer { name: "Alice", clubs: [] }, SimpleFencer { name: "Bob", clubs: [] }, PhantomData<fencing_sport_lib::fencer::SimpleFencer>), scores: None }"#
-        );
+        assert_eq!(format!("{bout:?}"), EXPECTED_BOUT);
     }
 
     #[test]
@@ -204,9 +200,6 @@ mod tests {
             FencerVs::new(fencer_a, fencer_b).unwrap();
         let bout = Bout::new(versus);
 
-        assert_eq!(
-            format!("{bout:?}"),
-            r#"Bout { fencers: FencerVs(SimpleFencer { name: "Alice", clubs: [] }, SimpleFencer { name: "Bob", clubs: [] }, PhantomData<fencing_sport_lib::fencer::SimpleFencer>), scores: None }"#
-        );
+        assert_eq!(format!("{bout:?}"), EXPECTED_BOUT);
     }
 }
