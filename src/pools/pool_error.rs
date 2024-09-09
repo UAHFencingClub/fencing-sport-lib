@@ -2,12 +2,12 @@ use std::{error::Error, fmt::Display};
 
 use crate::bout::VersusError;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum PoolSheetError {
     UnsupportedParticipantCount,
     InvalidBout,
     NoBoutFound,
-    PoolNotComplete,
+    PoolNotComplete(Vec<usize>),
 }
 
 impl Display for PoolSheetError {
@@ -16,7 +16,12 @@ impl Display for PoolSheetError {
         match self {
             InvalidBout => write!(f, "the requested bout is invalid"),
             NoBoutFound => write!(f, "this bout does not exist in this poolsheet"),
-            PoolNotComplete => write!(f, "the poolsheet has incomplete bouts"),
+            PoolNotComplete(indexes) => {
+                write!(
+                    f,
+                    "the poolsheet has incomplete bouts, indexes: {indexes:?}"
+                )
+            }
             UnsupportedParticipantCount => write!(
                 f,
                 "a poolsheet cannot be generated with the given amount of fencers"

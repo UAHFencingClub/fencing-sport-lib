@@ -153,7 +153,7 @@ impl<T: Fencer + Debug> PoolSheet<T> {
     }
 
     pub fn is_finished(&self) -> bool {
-        for (_, bout) in self.bouts.iter() {
+        for bout in self.bouts.values() {
             if bout.get_winner().is_none() {
                 return false;
             }
@@ -161,11 +161,22 @@ impl<T: Fencer + Debug> PoolSheet<T> {
         true
     }
 
+    pub fn unfinished_bout_indexes(&self) -> Vec<usize> {
+        let mut indexes = Vec::with_capacity(self.bouts.len());
+        for (index, bout) in self.bouts.values().enumerate() {
+            if bout.get_winner().is_none() {
+                indexes.push(index);
+            }
+        }
+        indexes
+    }
+
     pub fn finish(&self) -> Result<PoolResults<T>, PoolSheetError> {
-        if self.is_finished() {
+        let indexes = self.unfinished_bout_indexes();
+        if indexes.is_empty() {
             Ok(PoolResults::new(self))
         } else {
-            Err(PoolSheetError::PoolNotComplete)
+            Err(PoolSheetError::PoolNotComplete(indexes))
         }
     }
 
